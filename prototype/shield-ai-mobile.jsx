@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Shield, Lock, Zap, Bot, Code2, FileText, Plug, ChevronRight, Send, Sparkles, Eye, Brain, Terminal, Check, ArrowRight, MessageSquare, Globe, Search, ChevronDown, ChevronUp, Activity, Database, Workflow, BarChart3, Users, DollarSign, Award } from "lucide-react";
+import { Shield, Lock, Zap, Bot, Code2, FileText, Plug, ChevronRight, Send, Sparkles, Eye, Brain, Terminal, Check, ArrowRight, MessageSquare, Globe, Search, ChevronDown, ChevronUp, Activity, Database, Workflow, BarChart3, Users, DollarSign, Award, TrendingUp } from "lucide-react";
 
 /* ═══════ DESIGN TOKENS ═══════ */
 const T = {
@@ -574,7 +574,7 @@ const PricingView = () => {
           </span>
         </div>
         <p style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.6 }}>
-          At 2% conversion of DDG's 80M users to Shield Teams ($29.99/mo): <span style={{ color: T.accent, fontWeight: 700 }}>$575M ARR</span> in new enterprise revenue — 5.7x DDG's current total revenue.
+          At 2% conversion of DDG's 80M users to Shield Teams ($29.99/mo): <span style={{ color: T.accent, fontWeight: 700 }}>$653M ARR</span> in new enterprise revenue — 6.5x DDG's current total revenue.
         </p>
       </div>
     </div>

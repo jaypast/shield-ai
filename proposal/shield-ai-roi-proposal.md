@@ -111,7 +111,7 @@ Approximately $12,000–$25,000/month — which is noise against projected reven
 
 ## Competitive Landscape
 
-### Abacus AI (the model we're reverse-engineering)
+### Abacus AI
 
 Abacus offers ChatLLM at $10/month and DeepAgent at $20/month, with Enterprise starting at $5,000/month. Strengths include 100+ model access, autonomous agents, code sandbox, and aggressive pricing. However, Abacus has critical weaknesses: zero privacy positioning, opaque credit/usage system, hidden upsells, poor customer support, and buggy user experience. Reddit and review sites consistently cite these as deal-breakers for enterprise adoption.
 
@@ -131,7 +131,7 @@ Shield AI is the only product that combines multi-model access (100+ models), an
 
 ## Build Cost Analysis
 
-### Revised Estimate: $1.5–3M for v1
+### Estimate: $1.5–3M for v1
 
 The buy-vs-build strategy significantly reduces custom engineering scope. By self-hosting LiteLLM, LangGraph, E2B, Nango, Langfuse, and Qdrant, the team builds only the differentiated layer: intelligent routing, agent personas, the privacy dashboard, and frontend applications.
 

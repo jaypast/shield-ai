@@ -642,6 +642,39 @@ function GoalsTab({ initialGoalId }) {
   // ─── GOALS LIST VIEW ───
   return (
     <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 80px" }}>
+      {/* Program Goal (overarching mission) */}
+      <div style={{
+        padding: 18, borderRadius: 16, marginBottom: 16,
+        background: `linear-gradient(135deg, ${T.accent}14, ${T.purple}0A)`,
+        border: `1px solid ${T.accent}30`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+          <div style={{ color: T.accent }}>{I.target}</div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, fontFamily: F.mono, letterSpacing: "0.1em" }}>
+            PROGRAM GOAL
+          </span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.body, lineHeight: 1.45, marginBottom: 14 }}>
+          Launch and grow a privacy-first newsletter that builds an engaged, owned audience without compromising reader or operator privacy.
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.08em", marginBottom: 8 }}>
+          OBJECTIVES
+        </div>
+        {[
+          { n: "01", color: T.green, text: "Publish on privacy-respecting infrastructure — self-hosted Ghost, zero trackers." },
+          { n: "02", color: T.blue, text: "Build a portable, owned email list — no platform lock-in." },
+          { n: "03", color: T.purple, text: "Establish authority in the privacy-in-AI conversation." },
+        ].map((o, i) => (
+          <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: i < 2 ? 8 : 0 }}>
+            <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 700, color: o.color, marginTop: 1, minWidth: 16 }}>{o.n}</span>
+            <span style={{ fontSize: 12.5, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{o.text}</span>
+          </div>
+        ))}
+        <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 12, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
+          The goals below are the execution work that ladders up to this mission.
+        </div>
+      </div>
+
       {/* New Goal CTA */}
       <button style={{
         width: "100%", padding: "16px", borderRadius: 14,

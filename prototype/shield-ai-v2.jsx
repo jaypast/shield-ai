@@ -1018,7 +1018,7 @@ function PrivacyTab() {
                 { label: "Secret Scanner", sub: "Intercepts credentials before send", color: T.amber },
                 { label: "PII Stripping", sub: "Removes personal identifiers", color: T.blue },
                 { label: "Vault Injection", sub: "Resolves {{secret}} references for sandbox", color: T.green },
-                { label: "Anonymized Relay", sub: "Routed through DDG privacy proxy", color: T.purple },
+                { label: "Anonymized Relay", sub: "Routed through QQM privacy proxy", color: T.purple },
                 { label: "Model Response", sub: "Generated with zero-retention contract", color: T.cyan },
                 { label: "Session Destroyed", sub: "All traces deleted after delivery", color: T.privacyGreen },
               ].map((step, i) => (
@@ -1062,9 +1062,9 @@ function SettingsPanel({ onClose }) {
   const [expandedTier, setExpandedTier] = useState(null);
 
   const tiers = [
-    { name: "Shield Free", price: "$0", period: "/mo", color: T.textMuted, features: ["3 models (GPT-4o mini, Claude Haiku, Llama)", "50 messages/day", "Basic code sandbox", "No data retention"], badge: "Current Duck.ai Free" },
-    { name: "Shield Plus", price: "$9.99", period: "/mo", color: T.blue, features: ["7 models including GPT-4o, Claude Sonnet", "Unlimited messages", "Full code sandbox", "Basic agent access", "3 Vault secrets"], badge: "Maps to DDG Plus" },
-    { name: "Shield Pro", price: "$19.99", period: "/mo", color: T.purple, features: ["All frontier models", "Priority routing", "All 6 agents + Goals Engine", "25 integrations", "25 Vault secrets + auto-rotate", "Goal lifecycle management"], badge: "Maps to DDG Pro", highlight: true },
+    { name: "Shield Free", price: "$0", period: "/mo", color: T.textMuted, features: ["3 models (GPT-4o mini, Claude Haiku, Llama)", "50 messages/day", "Basic code sandbox", "No data retention"], badge: "Current Quack.ai Free" },
+    { name: "Shield Plus", price: "$9.99", period: "/mo", color: T.blue, features: ["7 models including GPT-4o, Claude Sonnet", "Unlimited messages", "Full code sandbox", "Basic agent access", "3 Vault secrets"], badge: "Maps to QQM Plus" },
+    { name: "Shield Pro", price: "$19.99", period: "/mo", color: T.purple, features: ["All frontier models", "Priority routing", "All 6 agents + Goals Engine", "25 integrations", "25 Vault secrets + auto-rotate", "Goal lifecycle management"], badge: "Maps to QQM Pro", highlight: true },
     { name: "Shield Teams", price: "$29.99", period: "/user/mo", color: T.accent, features: ["Everything in Pro", "Team workspaces + RBAC", "Shared Vault with team permissions", "50+ integrations", "SSO/SAML", "Admin dashboard", "Audit logging"], badge: "NEW Revenue" },
     { name: "Shield Enterprise", price: "Custom", period: "", color: T.amber, features: ["Everything in Teams", "On-prem / VPC deployment", "Unlimited Vault + HSM integration", "SOC 2 + HIPAA certified", "Custom model fine-tuning", "Dedicated support + SLA", "99.99% uptime guarantee"], badge: "$5K+/mo" },
   ];
@@ -1088,7 +1088,7 @@ function SettingsPanel({ onClose }) {
 
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.text, fontFamily: F.display }}>Plans & Pricing</div>
-          <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>Maps directly to DDG's existing tiers</div>
+          <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>Maps directly to QQM's existing tiers</div>
         </div>
 
         {tiers.map((tier, i) => (
@@ -1137,7 +1137,7 @@ function SettingsPanel({ onClose }) {
         }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: F.mono, marginBottom: 4 }}>PROJECTED ARR</div>
           <div style={{ fontSize: 28, fontWeight: 900, color: T.text, fontFamily: F.display }}>$575M</div>
-          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>Conservative estimate at 5% DDG user conversion</div>
+          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>Conservative estimate at 5% QQM user conversion</div>
         </div>
       </div>
     );
@@ -1294,7 +1294,7 @@ function SettingsPanel({ onClose }) {
 
       {/* App info */}
       <div style={{ textAlign: "center", marginTop: 20, fontSize: 10, color: T.textDim, fontFamily: F.mono }}>
-        Shield AI · Built for DuckDuckGo · Zero-retention architecture
+        Shield AI · Built for QuackQuackMoo · Zero-retention architecture
       </div>
     </div>
   );

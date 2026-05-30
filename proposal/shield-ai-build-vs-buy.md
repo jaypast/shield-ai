@@ -12,7 +12,7 @@ Every component is evaluated on three axes:
 
 **Differentiation** — Does building this in-house create competitive advantage that a competitor can't replicate by buying the same vendor solution? If not, buy it.
 
-**Privacy Compatibility** — Can the vendor's solution operate within DDG's zero-retention architecture? If the vendor requires telemetry, logging, or data access that violates the privacy guarantee, either self-host the open-source version or build it.
+**Privacy Compatibility** — Can the vendor's solution operate within QQM's zero-retention architecture? If the vendor requires telemetry, logging, or data access that violates the privacy guarantee, either self-host the open-source version or build it.
 
 **Time-to-Market** — How many engineering months does building save vs. buying? If buying saves 3+ months, the default is buy unless differentiation or privacy forces a build.
 
@@ -26,7 +26,7 @@ What it does: Accepts user queries, selects the optimal model, routes the reques
 
 **Decision: BUY — LiteLLM (self-hosted open source)**
 
-LiteLLM is the production standard for multi-model routing in 2026. It supports 100+ providers via an OpenAI-compatible API, includes virtual keys, budget controls, rate limits, team management, fallback routing, and cost tracking out of the box. Self-hosting is critical for privacy compliance — the managed LiteLLM Cloud sends telemetry to LiteLLM's servers, which violates zero-retention. The open-source version runs entirely within DDG's infrastructure.
+LiteLLM is the production standard for multi-model routing in 2026. It supports 100+ providers via an OpenAI-compatible API, includes virtual keys, budget controls, rate limits, team management, fallback routing, and cost tracking out of the box. Self-hosting is critical for privacy compliance — the managed LiteLLM Cloud sends telemetry to LiteLLM's servers, which violates zero-retention. The open-source version runs entirely within QQM's infrastructure.
 
 What to build on top: The "intelligent auto-routing" logic — the layer that analyzes query intent and selects the best model automatically. LiteLLM handles the mechanical routing; the intelligence layer is custom. This is approximately 2–4 weeks of engineering and is the defensible differentiator.
 
@@ -81,7 +81,7 @@ What it does: Spins up isolated containers for users to execute AI-generated cod
 
 E2B is purpose-built for AI agent code execution. It uses Firecracker microVMs for hardware-level isolation, achieves 150ms cold starts, provides Python and TypeScript SDKs designed for agent workflows, and is used by Perplexity, Hugging Face, and Groq. The managed service handles infrastructure, scaling, and security patching.
 
-However, E2B's managed service runs on E2B's infrastructure, which means user code temporarily executes on third-party servers. For Shield AI's zero-retention promise, this requires either contractual guarantees from E2B (similar to DDG's model provider contracts) or self-hosting Firecracker directly.
+However, E2B's managed service runs on E2B's infrastructure, which means user code temporarily executes on third-party servers. For Shield AI's zero-retention promise, this requires either contractual guarantees from E2B (similar to QQM's model provider contracts) or self-hosting Firecracker directly.
 
 **Recommended approach:** Use E2B's managed service for the beta phase with contractual zero-retention terms. For Shield Enterprise (on-prem/VPC customers), deploy Firecracker directly within the customer's infrastructure using E2B's open-source core.
 
@@ -102,9 +102,9 @@ Agent workflows can involve 10–50 LLM calls per task. Without observability, d
 
 **LangSmith** is the native observability layer for LangGraph. It provides trace visualization, prompt versioning, evaluation datasets, and cost tracking. A self-hosted option exists for enterprise customers who cannot send traces to LangChain's cloud.
 
-**Langfuse** is the open-source alternative. It's model-agnostic, integrates with LangGraph via the LangChain callback, and can be self-hosted entirely within DDG's infrastructure. It provides traces, prompt management, evaluations, and cost analytics.
+**Langfuse** is the open-source alternative. It's model-agnostic, integrates with LangGraph via the LangChain callback, and can be self-hosted entirely within QQM's infrastructure. It provides traces, prompt management, evaluations, and cost analytics.
 
-**Recommended approach:** Langfuse (self-hosted) for maximum privacy compatibility. It's free, fully open source, and keeps all trace data within DDG's infrastructure.
+**Recommended approach:** Langfuse (self-hosted) for maximum privacy compatibility. It's free, fully open source, and keeps all trace data within QQM's infrastructure.
 
 Cost: $0 (Langfuse self-hosted) + ~$500/month infrastructure
 Saves: 2–3 months vs. building custom tracing
@@ -126,7 +126,7 @@ Specific libraries: python-pptx for PowerPoint, python-docx for Word, ReportLab 
 What to build: The template system (pre-designed document templates for common use cases), the content-to-format mapping layer, and the integration with the agent framework so agents can output documents natively.
 
 Cost: $0 (open-source libraries) + 3–4 weeks engineering
-Privacy: Fully compatible — all processing happens in-memory within DDG's infrastructure.
+Privacy: Fully compatible — all processing happens in-memory within QQM's infrastructure.
 Alternative considered: Gotenberg (Docker-based document conversion API, good for self-hosting), Carbone.io (template-based, but SaaS pricing at scale)
 
 ---
@@ -139,11 +139,11 @@ What it does: Connects Shield AI to external tools (Slack, Google Drive, GitHub,
 
 Building and maintaining OAuth flows, API wrappers, rate limit handling, and webhook management for 50+ integrations is a massive engineering surface. Integration platforms abstract this entirely.
 
-**Nango** is open source, self-hostable, and handles OAuth, token refresh, rate limiting, and unified API access for 250+ integrations. Self-hosting keeps all credentials and data within DDG's infrastructure.
+**Nango** is open source, self-hostable, and handles OAuth, token refresh, rate limiting, and unified API access for 250+ integrations. Self-hosting keeps all credentials and data within QQM's infrastructure.
 
 **Merge.dev** is a managed unified API that normalizes data models across categories (HRIS, ATS, CRM, ticketing, file storage). It's more polished but SaaS-only.
 
-**Recommended approach:** Nango (self-hosted) for privacy compliance. It provides pre-built integrations for all target platforms (Slack, Drive, GitHub, Jira, Notion, Gmail, Confluence, Teams) and keeps all OAuth tokens and API data within DDG's infrastructure.
+**Recommended approach:** Nango (self-hosted) for privacy compliance. It provides pre-built integrations for all target platforms (Slack, Drive, GitHub, Jira, Notion, Gmail, Confluence, Teams) and keeps all OAuth tokens and API data within QQM's infrastructure.
 
 Cost: $0 (Nango open source) + infrastructure for the integration server (~$1,000/month)
 Saves: 6+ months vs. building 50+ custom integrations
@@ -181,7 +181,7 @@ Authentication is a solved problem with significant security liability. Do not b
 
 **Auth0** (Okta) is the broader platform with more features but higher complexity and cost.
 
-**Recommended approach:** WorkOS for the enterprise auth features (SSO, SAML, SCIM) that Shield Teams and Enterprise require. DDG's existing auth system handles consumer tiers.
+**Recommended approach:** WorkOS for the enterprise auth features (SSO, SAML, SCIM) that Shield Teams and Enterprise require. QQM's existing auth system handles consumer tiers.
 
 Cost: WorkOS starts at $0 for up to 1M MAUs on the free plan, with SSO connections priced per connection (~$125/connection/month).
 Saves: 2–3 months vs. building enterprise auth
@@ -213,14 +213,14 @@ What it does: Encrypts, stores, and manages user credentials (API keys, tokens, 
 
 **Decision: BUILD — Custom vault layer using libsodium/NaCl**
 
-This is a build decision for three reasons. First, privacy compliance — no third-party secrets manager (HashiCorp Vault, AWS Secrets Manager, Doppler) can guarantee zero-retention if secrets transit through their infrastructure, which violates DDG's core privacy contract. Second, the real-time chat scanner is a novel feature that doesn't exist in any off-the-shelf product — it requires deep integration with the chat input pipeline. Third, the runtime injection model (secrets resolved by name and injected as environment variables into E2B sandboxes) is specific to Shield's agent architecture.
+This is a build decision for three reasons. First, privacy compliance — no third-party secrets manager (HashiCorp Vault, AWS Secrets Manager, Doppler) can guarantee zero-retention if secrets transit through their infrastructure, which violates QQM's core privacy contract. Second, the real-time chat scanner is a novel feature that doesn't exist in any off-the-shelf product — it requires deep integration with the chat input pipeline. Third, the runtime injection model (secrets resolved by name and injected as environment variables into E2B sandboxes) is specific to Shield's agent architecture.
 
 Architecture: AES-256-GCM encryption via libsodium with per-secret unique nonces. Master key derived from user credentials using Argon2id. Encrypted blobs stored in Postgres alongside metadata. Runtime injection resolves `{{SECRET_NAME}}` references, decrypts in memory, injects as environment variables into the E2B container, and wipes the decrypted value after injection. Client-side regex scanner intercepts known credential patterns (GitHub PATs, AWS keys, Slack tokens) on every keystroke before the message is sent. Auto-rotation worker calls provider token refresh APIs on a configurable schedule. Team-shared secrets use envelope encryption for the Teams/Enterprise tiers.
 
 What to build: Vault CRUD API, chat scanner module + interception UI, E2B injection bridge, auto-rotation worker, team key management layer.
 
 Cost: $0 (libsodium is open source, Postgres already in the stack) + 4–6 weeks backend engineering + 1–2 weeks frontend
-Privacy: Fully compatible by design — secrets never leave DDG's infrastructure in plaintext.
+Privacy: Fully compatible by design — secrets never leave QQM's infrastructure in plaintext.
 Alternative considered: HashiCorp Vault (separate infrastructure, audit log conflicts with zero-retention), Infisical (open source but adds an unnecessary dependency), AWS Secrets Manager (managed service, violates zero-retention)
 
 ---
@@ -238,7 +238,7 @@ Architecture: Every goal is defined by six components enforced by the UI — Out
 What to build: Goal schema parser/validator, Plan → Execute → Verify graph, agent selector, blocker report generator, lifecycle controller, real-time status API (WebSocket/SSE), chat integration for goal creation, secrets bridge for `{{}}` reference resolution.
 
 Cost: $0 (LangGraph is open source) + ~$2,500–$5,500/month infra (checkpointing, concurrent execution) + 8–12 weeks for 2 senior engineers
-Privacy: Fully compatible — goal state in DDG's Postgres, execution in ephemeral E2B containers, secrets injected at runtime and destroyed post-execution.
+Privacy: Fully compatible — goal state in QQM's Postgres, execution in ephemeral E2B containers, secrets injected at runtime and destroyed post-execution.
 Alternative considered: OpenAI Codex (closed-source, SaaS-only, violates zero-retention), CrewAI (lacks goal lifecycle and structured schemas), AutoGen (lacks human escalation protocol)
 
 ---
@@ -256,7 +256,7 @@ Alternative considered: OpenAI Codex (closed-source, SaaS-only, violates zero-re
 │  └──────┬───────┘  └──────────────┘  └────────────────────────┘ │
 │         │                                                       │
 │  ┌──────▼──────────────────────────────────────────────────────┐│
-│  │              DDG Anonymization Relay (EXISTS)                ││
+│  │              QQM Anonymization Relay (EXISTS)                ││
 │  │              PII Stripping Pipeline (EXISTS)                 ││
 │  └──────┬──────────────────────────────────────────────────────┘│
 │         │                                                       │
@@ -360,7 +360,7 @@ This is dramatically lower than building equivalent functionality from scratch, 
 
 ## Phase Strategy
 
-**Phase 1 (MVP, Months 1–3):** LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Ship Shield Teams beta to 1,000 DDG power users. Core deliverables: auto-route intelligence layer, 2 agents (Research + Docs), ephemeral code sandbox via E2B, Secrets Vault (core CRUD, chat scanner, sandbox injection), basic Goals Engine (Plan/Execute/Verify loop with 2 agents), and the privacy compliance dashboard. Monthly vendor cost: approximately $9,000.
+**Phase 1 (MVP, Months 1–3):** LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Ship Shield Teams beta to 1,000 QQM power users. Core deliverables: auto-route intelligence layer, 2 agents (Research + Docs), ephemeral code sandbox via E2B, Secrets Vault (core CRUD, chat scanner, sandbox injection), basic Goals Engine (Plan/Execute/Verify loop with 2 agents), and the privacy compliance dashboard. Monthly vendor cost: approximately $9,000.
 
 **Phase 2 (Platform, Months 4–6):** Add Nango for 50+ enterprise integrations, WorkOS for SSO/SAML, E2B at scale for code sandbox. Expand to 10,000 beta users. Build remaining 4 agents (Code Engineer, Data Analyst, Workflow Bot, Web Navigator), goal lifecycle management (pause/resume/abort), auto-rotation for Vault secrets, team workspaces, and admin controls. Monthly vendor cost: approximately $14,500.
 

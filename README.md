@@ -1,46 +1,57 @@
 # Shield AI — Private AI Platform for DuckDuckGo
 
-> Every frontier AI model. Autonomous agents. Code execution. Enterprise integrations.  
+> Every frontier AI model. Autonomous goal-directed agents. Encrypted secrets vault. Code execution sandbox. Enterprise integrations.  
 > **Zero data retention. Zero tracking. Zero compromise.**
 
 ---
 
 ## What Is This?
 
-Shield AI is a privacy-first AI super-platform designed to be pitched to DuckDuckGo as their next major product. It reverse-engineers the Abacus AI / ChatLLM architecture and rebuilds it on top of DuckDuckGo's existing zero-retention privacy infrastructure.
+Shield AI is a privacy-first AI super-platform designed to be pitched to DuckDuckGo as their next major product. It builds on the market demand that Abacus AI / ChatLLM validated — unified multi-model AI with agents, code execution, and enterprise integrations — and reimagines it on top of DuckDuckGo's existing zero-retention privacy infrastructure.
 
 ## Repository Structure
 
 ```
-shield-ai-project/
+shield-ai/
+├── README.md
 ├── prototype/
-│   ├── shield-ai-mobile.jsx      # Mobile-first interactive prototype (React)
-│   └── shield-ai-prototype.jsx   # Desktop prototype (React)
-├── proposal/
-│   ├── shield-ai-roi-proposal.md  # Full ROI proposal & pricing model
-│   └── shield-ai-proposal.pptx   # 10-slide pitch deck for DDG leadership
-└── README.md
+│   ├── shield-ai-v2.jsx              # Responsive prototype (mobile + desktop)
+│   ├── shield-ai-mobile.jsx          # Mobile prototype (archived)
+│   └── shield-ai-prototype.jsx       # Desktop prototype (archived)
+└── proposal/
+    ├── shield-ai-build-vs-buy.md     # Component architecture decisions (12 components)
+    ├── shield-ai-product-discovery.md # Assumptions, validation, decision gates
+    ├── shield-ai-proposal.pptx       # 10-slide pitch deck for DDG leadership
+    └── shield-ai-roi-proposal.md     # Full ROI proposal & pricing model
 ```
 
 ## Prototype Features
 
-The working prototypes demonstrate all five platform pillars:
+The working prototype demonstrates all seven platform pillars:
 
 - **AI Router** — 100+ models with intelligent auto-routing and per-model privacy indicators
-- **Autonomous Agents** — Deep research, code engineer, doc generator, data analyst, workflow bot, web navigator
-- **Code Sandbox** — Ephemeral container execution with zero data persistence
+- **Goals Engine** — Autonomous goal-directed orchestration. Define objectives, not prompts. Plan → Execute → Verify loop with lifecycle management (pause/resume/abort), structured schemas, and intelligent blocker reporting with human escalation
+- **Secrets Vault** — AES-256-GCM encrypted credential storage. Agents reference secrets by name (`{{GITHUB_PAT}}`) with runtime injection. Real-time chat scanner intercepts accidentally-typed secrets before they reach the model
+- **Agent Suite** — Six specialized agents (Deep Research, Code Engineer, Doc Generator, Data Analyst, Workflow Bot, Web Navigator) deployed by the Goals Engine as needed, with agent visibility on every goal card and execution step
+- **Code Sandbox** — Ephemeral container execution with zero data persistence and full Vault integration
 - **Enterprise Integrations** — Slack, Google Drive, GitHub, Jira, Notion, Confluence, Gmail, Teams
-- **Privacy Dashboard** — Real-time transparency into query lifecycle, PII stripping, and compliance status
+- **Privacy Dashboard** — Real-time transparency into query lifecycle, PII stripping, Vault injection, and compliance status
+
+## Navigation
+
+4 bottom tabs: **Chat** (with secret scanner), **Goals** (replaces agents catalog), **Code** (with `{{secret}}` injection), **Privacy** (sub-toggle: Secrets Vault + Architecture).
+
+Settings (gear icon in header): Plans & Pricing, Model Preferences, Integrations, Account & Team, Notifications.
 
 ## Pricing Model (5 Tiers)
 
-| Tier | Price | Status |
-|------|-------|--------|
-| Shield Free | $0/mo | Existing (Duck.ai) |
-| Shield Plus | $9.99/mo | Existing (DDG subscription) |
-| Shield Pro | $19.99/mo | Existing (DDG Pro) |
-| **Shield Teams** | **$29.99/user/mo** | **New revenue** |
-| **Shield Enterprise** | **$5,000+/mo** | **New revenue** |
+| Tier | Price | Vault | Goals | Status |
+|------|-------|-------|-------|--------|
+| Shield Free | $0/mo | 0 | — | Existing (Duck.ai) |
+| Shield Plus | $9.99/mo | 3 | Basic | Existing (DDG subscription) |
+| Shield Pro | $19.99/mo | 25 + auto-rotate | Full | Existing (DDG Pro) |
+| **Shield Teams** | **$29.99/user/mo** | **Shared + RBAC** | **Full + audit** | **New revenue** |
+| **Shield Enterprise** | **$5,000+/mo** | **Unlimited + HSM** | **Full + templates** | **New revenue** |
 
 ## Revenue Projections
 
@@ -48,14 +59,13 @@ The working prototypes demonstrate all five platform pillars:
 - **Moderate** (2% conversion): $653M ARR — 6.5x current DDG revenue
 - **Aggressive** (5% conversion): $1.63B ARR — 16x current DDG revenue
 
-## How to Run the Prototypes
+## How to Run the Prototype
 
-The `.jsx` files are React components designed to render in any React environment. To preview:
-
-1. Use any React sandbox (CodeSandbox, StackBlitz, or a local Vite/CRA project)
-2. Import the component as the default export
-3. Required dependencies: `react`, `lucide-react`
+1. Open `prototype/shield-ai-v2.jsx` in Claude.ai as an artifact
+2. Or import the component as the default export in any React app
+3. Required dependencies: `react` (no external icon libraries — all SVGs inline)
+4. Responsive: auto-detects viewport width (mobile ≤700px, desktop >700px)
 
 ## Confidential
 
-This repository contains proprietary strategy and pricing materials prepared for a pitch to DuckDuckGo. Do not distribute publicly.
+This repository contains proprietary strategy, pricing, and architecture materials prepared for a pitch to DuckDuckGo. Do not distribute publicly.

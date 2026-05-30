@@ -11,9 +11,72 @@ Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQu
 
 ## Live Demo
 
-**[https://jaypast.github.io/shield-ai](https://jaypast.github.io/shield-ai)**
+**[https://jaypast.github.io/shield-ai](https://jaypast.github.io/shield-ai)** — Interactive prototype (mobile + desktop)
 
-Interactive prototype — works on any device, no setup required.
+**[https://jaypast.github.io/shield-ai/deck.html](https://jaypast.github.io/shield-ai/deck.html)** — Pitch deck (10 slides, keyboard/swipe nav)
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        SHIELD AI STACK                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  │   Frontend   │  │  WorkOS/Auth │  │   Vanta (Compliance)   │ │
+│  │   (BUILD)    │  │    (BUY)     │  │        (BUY)           │ │
+│  └──────┬───────┘  └──────────────┘  └────────────────────────┘ │
+│         │                                                       │
+│  ┌──────▼──────────────────────────────────────────────────────┐│
+│  │              QQM Anonymization Relay (EXISTS)                ││
+│  │              PII Stripping Pipeline (EXISTS)                 ││
+│  └──────┬──────────────────────────────────────────────────────┘│
+│         │                                                       │
+│  ┌──────▼──────────────────────────────────────────────────────┐│
+│  │           Prisma AIRS / Guardrails AI (BUY)                 ││
+│  │           Prompt/Response Security Scanning                  ││
+│  └──────┬──────────────────────────────────────────────────────┘│
+│         │                                                       │
+│  ┌──────▼──────────────────────────────────────────────────────┐│
+│  │              LiteLLM Proxy — Self-Hosted (BUY)              ││
+│  │     Model Routing / Fallbacks / Cost Tracking / Budgets     ││
+│  │  ┌──────────────────────────────────────────────────────┐   ││
+│  │  │     Auto-Route Intelligence Layer (BUILD — custom)   │   ││
+│  │  └──────────────────────────────────────────────────────┘   ││
+│  └──────┬──────────────────────────────────────────────────────┘│
+│         │                                                       │
+│  ┌──────▼───────────────────────────────────────────┐          │
+│  │        LangGraph — Self-Hosted (BUY)             │          │
+│  │        Agent Orchestration Framework              │          │
+│  │  ┌─────────────────────────────────────────────┐ │          │
+│  │  │  Goal Orchestration Engine (BUILD — core IP) │ │          │
+│  │  │  Plan → Execute → Verify / Lifecycle Mgmt   │ │          │
+│  │  ├─────────────────────────────────────────────┤ │          │
+│  │  │  Custom Agent Definitions (BUILD — core IP) │ │          │
+│  │  │  Research / Code / Docs / Data / Workflow   │ │          │
+│  │  └─────────────────────────────────────────────┘ │          │
+│  └──────┬───────────────────────────────────────────┘          │
+│         │                                                       │
+│  ┌──────▼────────┐ ┌──────────────┐ ┌────────────────────────┐ │
+│  │ E2B/Firecrackr│ │ Nango        │ │ Qdrant                 │ │
+│  │ Code Sandbox  │ │ Integrations │ │ Vector Store           │ │
+│  │    (BUY)      │ │   (BUY)      │ │   (BUY)                │ │
+│  └───────────────┘ └──────────────┘ └────────────────────────┘ │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │       Secrets Vault — libsodium/NaCl (BUILD)             │  │
+│  │       AES-256-GCM / Runtime Injection / Chat Scanner     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │          Langfuse — Self-Hosted (BUY)                    │  │
+│  │          Observability / Traces / Cost Analytics          │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key principle:** Every component that touches user data is self-hosted. Everything else can be SaaS. This makes "zero retention" provable rather than promissory.
 
 ## Repository Structure
 

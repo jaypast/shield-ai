@@ -9,6 +9,12 @@
 
 Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQuackMoo as their next major product. It builds on the market demand that Abacus AI / ChatLLM validated — unified multi-model AI with agents, code execution, and enterprise integrations — and reimagines it on top of QuackQuackMoo's existing zero-retention privacy infrastructure.
 
+## Live Demo
+
+**[https://jaypast.github.io/shield-ai](https://jaypast.github.io/shield-ai)**
+
+Interactive prototype — works on any device, no setup required.
+
 ## Repository Structure
 
 ```

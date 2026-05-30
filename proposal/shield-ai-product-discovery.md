@@ -72,7 +72,7 @@ These assumptions answer the question: are we building the right thing?
 
 **Assumption 2.1: Multi-model routing delivers real value over single-model access**
 
-We assume users benefit from intelligent routing across 100+ models (via self-hosted LiteLLM) rather than just picking one good model. This is core to the Abacus AI value proposition we're reverse-engineering. However, most users may not care which model answers their query — they just want a good answer. The auto-route intelligence layer we're building on top of LiteLLM could be engineering overhead that doesn't move the needle on user satisfaction.
+We assume users benefit from intelligent routing across 100+ models (via self-hosted LiteLLM) rather than just picking one good model. This is a pattern that Abacus AI validated with strong market traction. However, most users may not care which model answers their query — they just want a good answer. The auto-route intelligence layer we're building on top of LiteLLM could be engineering overhead that doesn't move the needle on user satisfaction.
 
 Risk: MEDIUM
 Impact: MEDIUM — if false, we simplify the architecture but LiteLLM still provides fallbacks and cost optimization
@@ -230,17 +230,59 @@ Cost: $0 incremental (part of Phase 1 development)
 
 ---
 
-**Assumption 4.5: The $1.5–3M build cost estimate holds with the buy-vs-build stack**
+**Assumption 4.5: The $1.7–3.3M build cost estimate holds with the buy-vs-build stack**
 
-We estimated a 10-person team over 6 months, with 70% of the platform bought and self-hosted. This assumes LiteLLM, LangGraph, E2B, Nango, Langfuse, and Qdrant all integrate cleanly and don't require significant custom wrappers or workarounds. If integration proves harder than expected (incompatible APIs, missing features, self-hosting complexity), custom engineering hours increase and the cost estimate grows.
+We estimated a 12-person team over 6 months, with 70% of the platform bought and self-hosted. This assumes LiteLLM, LangGraph, E2B, Nango, Langfuse, and Qdrant all integrate cleanly and don't require significant custom wrappers or workarounds. It also assumes the Secrets Vault and Goal Orchestration Engine can be built within the estimated 14–18 weeks by the 2 additional engineers. If integration proves harder than expected (incompatible APIs, missing features, self-hosting complexity), custom engineering hours increase and the cost estimate grows.
 
 Risk: MEDIUM
 Impact: MEDIUM — cost overruns affect the ROI pitch, but the buy-vs-build approach provides natural escape valves (drop a vendor, build a simpler version)
 
-How to validate: During the Phase 1 proof-of-concept (weeks 1–4), track actual engineering hours per integration. If LiteLLM integration takes 3 weeks instead of 1, or Nango requires significant custom wrappers, extrapolate the impact on total build cost. Get independent sanity-check estimates from 2–3 senior engineers who have worked with these specific tools. Success threshold: independent estimates fall within 1.5x of the $1.5–3M range, and Phase 1 integration hours track within 20% of plan.
+How to validate: During the Phase 1 proof-of-concept (weeks 1–4), track actual engineering hours per integration. If LiteLLM integration takes 3 weeks instead of 1, or Nango requires significant custom wrappers, extrapolate the impact on total build cost. Get independent sanity-check estimates from 2–3 senior engineers who have worked with these specific tools. Success threshold: independent estimates fall within 1.5x of the $1.7–3.3M range, and Phase 1 integration hours track within 20% of plan.
 
 Timeline: 4 weeks (Phase 1 actuals) + 2 weeks (advisor review)
 Cost: $2,000–$5,000 (advisor fees)
+
+---
+
+**Assumption 4.6: libsodium/NaCl provides sufficient cryptographic primitives for the Secrets Vault**
+
+We assume libsodium's AES-256-GCM implementation is secure and performant enough for secret encryption at scale. This is a low-risk assumption — libsodium is the industry-standard cryptographic library used by Signal, WhatsApp, and Cloudflare.
+
+Risk: LOW
+Impact: HIGH — the entire Vault feature depends on it
+
+How to validate: Security audit of the encryption implementation during Phase 1. Use established test vectors for AES-256-GCM. Engage a third-party cryptography reviewer before launch. Success threshold: third-party reviewer confirms implementation follows cryptographic best practices with no vulnerabilities.
+
+Timeline: 2 weeks (during Phase 1)
+Cost: $5,000–$10,000 (third-party review)
+
+---
+
+**Assumption 4.7: LangGraph checkpointing supports goal lifecycle management at scale**
+
+We assume LangGraph's Postgres-backed checkpointing can handle thousands of concurrent paused goals without degrading database performance or checkpoint integrity. LangGraph checkpointing is designed for this use case, but we haven't benchmarked it at Shield's projected scale.
+
+Risk: MEDIUM
+Impact: MEDIUM — if checkpointing degrades, we can limit concurrent paused goals per user
+
+How to validate: Load test LangGraph checkpointing with 5,000 concurrent paused graphs during Phase 1. Measure checkpoint size, restore latency, and Postgres load. Success threshold: checkpoint restore under 500ms at p95, Postgres CPU under 70% with 5,000 concurrent paused graphs.
+
+Timeline: 1 week (during Phase 1)
+Cost: $500 (cloud compute for load testing)
+
+---
+
+**Assumption 4.8: Real-time chat scanning doesn't degrade input latency**
+
+We assume client-side regex matching against ~20 credential patterns adds negligible latency to the chat input. Modern browsers execute simple regex matches in microseconds, but this needs validation on low-end mobile devices.
+
+Risk: LOW
+Impact: LOW — worst case, scanner runs on debounced input (every 300ms) instead of every keystroke
+
+How to validate: Benchmark on iPhone SE, Pixel 4a, and a low-end Android device during frontend development. Success threshold: scanner adds less than 5ms to input processing on all test devices.
+
+Timeline: 1 day
+Cost: $0
 
 ---
 
@@ -356,9 +398,12 @@ Priority 2 — Validate in parallel with early development ($3K–$5K, weeks 2�
 - Assumption 1.3: Enterprise buyers will pay the premium
 - Assumption 3.1: $29.99 is the right price point
 
-Priority 3 — Validate during Phase 1 build ($1K–$4K, weeks 1–8):
+Priority 3 — Validate during Phase 1 build ($6K–$14K, weeks 1–8):
 - Assumption 4.3: LiteLLM is production-reliable at scale
 - Assumption 4.4: LangGraph handles agent complexity
+- Assumption 4.6: libsodium provides sufficient crypto for Vault ($5K–$10K review)
+- Assumption 4.7: LangGraph checkpointing supports goal lifecycle at scale
+- Assumption 4.8: Chat scanner latency is acceptable
 - Assumption 4.2: E2B meets latency and privacy bar
 - Assumption 4.1: DDG relay handles platform-level load
 - Assumption 5.1: Nango covers all required integrations
@@ -380,10 +425,10 @@ Priority 5 — Monitor ongoing ($0):
 
 ## Validation Budget Summary
 
-Total estimated validation cost: $15,000–$30,000
+Total estimated validation cost: $20,000–$40,000
 Total estimated timeline: 4–6 weeks (most experiments run in parallel)
 
-This represents approximately 1% of the projected build cost and can confirm or kill the project before committing engineering resources. The vendor-specific assumptions (Category 4 and 5) are validated during Phase 1 development at near-zero incremental cost, since they're proven through the same proof-of-concept work that produces the beta product.
+This represents approximately 1% of the projected build cost and can confirm or kill the project before committing engineering resources. The vendor-specific assumptions (Category 4 and 5) are validated during Phase 1 development at near-zero incremental cost, since they're proven through the same proof-of-concept work that produces the beta product. The exception is the Secrets Vault cryptographic review ($5,000–$10,000), which requires a third-party specialist.
 
 ---
 

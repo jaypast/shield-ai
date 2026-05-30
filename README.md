@@ -1,4 +1,4 @@
-# Shield AI — Private AI Platform for DuckDuckGo
+# Shield AI — Private AI Platform for QuackQuackMoo
 
 > Every frontier AI model. Autonomous goal-directed agents. Encrypted secrets vault. Code execution sandbox. Enterprise integrations.  
 > **Zero data retention. Zero tracking. Zero compromise.**
@@ -7,7 +7,7 @@
 
 ## What Is This?
 
-Shield AI is a privacy-first AI super-platform designed to be pitched to DuckDuckGo as their next major product. It builds on the market demand that Abacus AI / ChatLLM validated — unified multi-model AI with agents, code execution, and enterprise integrations — and reimagines it on top of DuckDuckGo's existing zero-retention privacy infrastructure.
+Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQuackMoo as their next major product. It builds on the market demand that Abacus AI / ChatLLM validated — unified multi-model AI with agents, code execution, and enterprise integrations — and reimagines it on top of QuackQuackMoo's existing zero-retention privacy infrastructure.
 
 ## Repository Structure
 
@@ -21,7 +21,7 @@ shield-ai/
 └── proposal/
     ├── shield-ai-build-vs-buy.md     # Component architecture decisions (12 components)
     ├── shield-ai-product-discovery.md # Assumptions, validation, decision gates
-    ├── shield-ai-proposal.pptx       # 10-slide pitch deck for DDG leadership
+    ├── shield-ai-proposal.pptx       # 10-slide pitch deck for QQM leadership
     └── shield-ai-roi-proposal.md     # Full ROI proposal & pricing model
 ```
 
@@ -47,17 +47,17 @@ Settings (gear icon in header): Plans & Pricing, Model Preferences, Integrations
 
 | Tier | Price | Vault | Goals | Status |
 |------|-------|-------|-------|--------|
-| Shield Free | $0/mo | 0 | — | Existing (Duck.ai) |
-| Shield Plus | $9.99/mo | 3 | Basic | Existing (DDG subscription) |
-| Shield Pro | $19.99/mo | 25 + auto-rotate | Full | Existing (DDG Pro) |
+| Shield Free | $0/mo | 0 | — | Existing (Quack.ai) |
+| Shield Plus | $9.99/mo | 3 | Basic | Existing (QQM subscription) |
+| Shield Pro | $19.99/mo | 25 + auto-rotate | Full | Existing (QQM Pro) |
 | **Shield Teams** | **$29.99/user/mo** | **Shared + RBAC** | **Full + audit** | **New revenue** |
 | **Shield Enterprise** | **$5,000+/mo** | **Unlimited + HSM** | **Full + templates** | **New revenue** |
 
 ## Revenue Projections
 
-- **Conservative** (0.5% conversion): $163M ARR — 1.6x current DDG revenue
-- **Moderate** (2% conversion): $653M ARR — 6.5x current DDG revenue
-- **Aggressive** (5% conversion): $1.63B ARR — 16x current DDG revenue
+- **Conservative** (0.5% conversion): $163M ARR — 1.6x current QQM revenue
+- **Moderate** (2% conversion): $653M ARR — 6.5x current QQM revenue
+- **Aggressive** (5% conversion): $1.63B ARR — 16x current QQM revenue
 
 ## How to Run the Prototype
 
@@ -68,4 +68,4 @@ Settings (gear icon in header): Plans & Pricing, Model Preferences, Integrations
 
 ## Confidential
 
-This repository contains proprietary strategy, pricing, and architecture materials prepared for a pitch to DuckDuckGo. Do not distribute publicly.
+This repository contains proprietary strategy, pricing, and architecture materials prepared for a pitch to QuackQuackMoo. Do not distribute publicly.

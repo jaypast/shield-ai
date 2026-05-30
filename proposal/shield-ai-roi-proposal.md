@@ -8,7 +8,9 @@
 
 Shield AI transforms DuckDuckGo from a **$100M privacy search company** into a **$1B+ AI platform company** by adding an enterprise-grade AI execution layer on top of DDG's existing privacy infrastructure. The product fills the exact gap between what Abacus AI proved the market wants (unified multi-model AI platform with agents, code execution, and enterprise integrations) and what DuckDuckGo uniquely owns (the most trusted privacy brand in consumer technology, with 80M+ users and zero-retention architecture already in production).
 
-The build is capital-efficient by design. By buying and self-hosting proven open-source infrastructure (LiteLLM for routing, LangGraph for agents, E2B for sandboxing, Nango for integrations) and building only the defensible IP layer on top, Shield AI reaches market in 6 months at $1.5–3M — a fraction of the $113M Abacus AI raised to build from scratch. A $15–30K validation sprint in weeks 1–6 confirms or kills every critical assumption before engineering begins.
+Two features create a moat no competitor can replicate. The **Secrets Vault** provides AES-256-GCM encrypted credential storage with runtime injection — agents use API keys without ever seeing them, and a real-time scanner intercepts secrets accidentally typed in chat. No competing platform offers this. The **Goal Orchestration Engine** turns Shield from an AI assistant into an AI coworker — users define objectives, and the engine autonomously plans, executes, verifies, and escalates to humans only when blocked, using whichever agents the task requires.
+
+The build is capital-efficient by design. By buying and self-hosting proven open-source infrastructure (LiteLLM for routing, LangGraph for agents, E2B for sandboxing, Nango for integrations) and building only the defensible IP layer on top, Shield AI reaches market in 6 months at $1.7–3.3M — a fraction of the $113M Abacus AI raised to build from scratch. A $20–40K validation sprint in weeks 1–6 confirms or kills every critical assumption before engineering begins.
 
 No competitor occupies this intersection. OpenAI, Google, and Anthropic will never lead with privacy. Abacus AI has no privacy story. DuckDuckGo is the only company that can credibly ship a privacy-first AI super-platform — and the market is waiting for it.
 
@@ -36,12 +38,12 @@ Includes everything in Plus, along with Claude Opus access, highest-tier reasoni
 ### Tier 4: Shield Teams — $29.99/user/month
 *Status: NEW — The core Shield AI product*
 
-This is the new revenue tier. It includes everything in Pro, plus 100+ AI models with intelligent auto-routing, autonomous AI agents (deep research, code engineering, document generation, data analysis, workflow automation, web navigation), a private code sandbox with ephemeral containers, enterprise integrations (Slack, Google Drive, GitHub, Jira, Notion, Confluence, Gmail, Teams), team workspaces with admin controls, SSO/SAML authentication with audit logs, and a dedicated privacy compliance dashboard.
+This is the new revenue tier. It includes everything in Pro, plus 100+ AI models with intelligent auto-routing, the Goal Orchestration Engine (define objectives and let autonomous agents execute via Plan → Execute → Verify loops with lifecycle management), all 6 AI agents (deep research, code engineering, document generation, data analysis, workflow automation, web navigation), 25 Secrets Vault slots with auto-rotation (encrypted credential storage with runtime injection — agents use your API keys without ever seeing them), a private code sandbox with ephemeral containers, enterprise integrations (Slack, Google Drive, GitHub, Jira, Notion, Confluence, Gmail, Teams), team workspaces with admin controls, SSO/SAML authentication with audit logs, and a dedicated privacy compliance dashboard.
 
 ### Tier 5: Shield Enterprise — Starting at $5,000/month
 *Status: NEW — High-value accounts*
 
-Everything in Teams, plus on-premise or VPC deployment options, custom model fine-tuning on private organizational data, dedicated infrastructure with SLA guarantees, HIPAA/SOC2/GDPR certification, custom agent workflows, AI security powered by Palo Alto Networks Prisma AIRS, and priority support with a dedicated customer success manager.
+Everything in Teams, plus on-premise or VPC deployment options, unlimited Secrets Vault with HSM integration and team-shared secrets (envelope encryption with RBAC), custom goal templates and goal audit logging for compliance, custom model fine-tuning on private organizational data, dedicated infrastructure with SLA guarantees, HIPAA/SOC2/GDPR certification, custom agent workflows, AI security powered by Palo Alto Networks Prisma AIRS, and priority support with a dedicated customer success manager.
 
 ---
 
@@ -97,6 +99,10 @@ The **auto-route intelligence layer** analyzes query intent and selects the opti
 
 The **six custom agent personas** (Deep Research, Code Engineer, Doc Generator, Data Analyst, Workflow Bot, Web Navigator) are built as LangGraph graphs with custom tools, prompts, and state schemas. Each agent is approximately 4–6 weeks of engineering. This is the core product IP.
 
+The **goal orchestration engine** sits on top of LangGraph and adds the Plan → Execute → Verify loop, structured goal schemas (Outcome, Verification, Constraints, Boundaries, Iteration Policy, Stop Condition), lifecycle management (pause/resume/abort), agent selection per step, and structured blocker reporting with human escalation. Approximately 8–12 weeks for 2 senior engineers.
+
+The **secrets vault** provides AES-256-GCM encrypted credential storage, runtime injection into E2B sandboxes via `{{SECRET_NAME}}` syntax, real-time chat scanning, auto-rotation, and team-shared secrets with envelope encryption. Approximately 4–6 weeks backend + 1–2 weeks frontend.
+
 The **privacy compliance dashboard** provides real-time transparency into how data flows through the system — or rather, how it doesn't. This is a brand differentiator unique to Shield AI. Approximately 2–3 weeks of engineering.
 
 The **frontend applications** (web, mobile, browser extension) are the user-facing interfaces. Approximately 3–4 months of engineering.
@@ -105,7 +111,7 @@ The **document template system** and **integration wiring** connecting all compo
 
 ### Total Monthly Vendor + Infrastructure Cost at Scale
 
-Approximately $12,000–$25,000/month — which is noise against projected revenue at any conversion scenario.
+Approximately $14,500–$30,500/month — which is noise against projected revenue at any conversion scenario.
 
 ---
 
@@ -125,17 +131,17 @@ Gemini Advanced costs $19.99/month and is deeply integrated into the Google ecos
 
 ### Shield AI Positioning
 
-Shield AI is the only product that combines multi-model access (100+ models), an autonomous agent framework, code execution in ephemeral containers, enterprise integrations, and a verifiable zero-retention privacy architecture — all from a company whose brand is literally synonymous with privacy. This is not a marginal competitive advantage. It is a category-defining position.
+Shield AI is the only product that combines multi-model access (100+ models), an autonomous agent framework, goal-directed orchestration with lifecycle management, encrypted secrets management with runtime injection, code execution in ephemeral containers, enterprise integrations, and a verifiable zero-retention privacy architecture — all from a company whose brand is literally synonymous with privacy. No competitor offers encrypted credential management (the Secrets Vault) or autonomous goal execution with structured human escalation (the Goals Engine). This is not a marginal competitive advantage. It is a category-defining position.
 
 ---
 
 ## Build Cost Analysis
 
-### Estimate: $1.5–3M for v1
+### Estimate: $1.7–3.3M for v1
 
-The buy-vs-build strategy significantly reduces custom engineering scope. By self-hosting LiteLLM, LangGraph, E2B, Nango, Langfuse, and Qdrant, the team builds only the differentiated layer: intelligent routing, agent personas, the privacy dashboard, and frontend applications.
+The buy-vs-build strategy significantly reduces custom engineering scope. By self-hosting LiteLLM, LangGraph, E2B, Nango, Langfuse, and Qdrant, the team builds only the differentiated layer: intelligent routing, agent personas, the goal orchestration engine, the secrets vault, the privacy dashboard, and frontend applications.
 
-This assumes a 10-person team working over 6 months, consisting of 3 backend engineers (auto-route intelligence, agent definitions, integration wiring), 3 frontend engineers (web app, mobile, browser extension), 2 infrastructure/DevOps engineers (self-hosted stack deployment, ephemeral compute, encryption relay), 1 security/compliance lead (SOC2, HIPAA prep, Prisma AIRS integration), and 1 product designer.
+This assumes a 12-person team working over 6 months, consisting of 4 backend engineers (auto-route intelligence, agent definitions, goal engine, secrets vault, integration wiring), 3 frontend engineers (web app, mobile, browser extension), 2 infrastructure/DevOps engineers (self-hosted stack deployment, ephemeral compute, encryption relay), 1 security/compliance lead (SOC2, HIPAA prep, Prisma AIRS integration, Vault crypto review), 1 product designer, and 1 QA engineer.
 
 ### Why This Estimate Is Credible
 
@@ -143,13 +149,13 @@ Seven of the ten major platform components are bought, not built. The engineerin
 
 ### Ongoing Costs
 
-Monthly vendor and infrastructure costs of $12,000–$25,000 represent less than 0.2% of revenue at the conservative projection and are fully offset by the first 400–800 Shield Teams subscribers.
+Monthly vendor and infrastructure costs of $14,500–$30,500 represent less than 0.2% of revenue at the conservative projection and are fully offset by the first 400–800 Shield Teams subscribers.
 
 ---
 
 ## Risk Mitigation: Validation-First Approach
 
-Before committing engineering resources, a $15,000–$30,000 validation sprint over 4–6 weeks confirms or kills every critical assumption.
+Before committing engineering resources, a $20,000–$40,000 validation sprint over 4–6 weeks confirms or kills every critical assumption. This includes a $5,000–$10,000 third-party cryptographic review of the Secrets Vault encryption implementation.
 
 ### Decision Gate 1 — Week 3: Demand Signal
 
@@ -175,19 +181,19 @@ Passing all four gates means the project has earned the right to full investment
 
 ### Phase 1: Months 1–3 — Foundation
 
-Deploy LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Ship Shield Teams beta to 1,000 DDG power users. Core deliverables: auto-route intelligence layer, 2 agents (Deep Research + Doc Generator), ephemeral code sandbox via E2B, and the privacy compliance dashboard. Monthly vendor cost: approximately $6,500.
+Deploy LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Ship Shield Teams beta to 1,000 DDG power users. Core deliverables: auto-route intelligence layer, 2 agents (Deep Research + Doc Generator), ephemeral code sandbox via E2B, Secrets Vault (core CRUD, chat scanner, sandbox injection), basic Goals Engine (Plan → Execute → Verify loop with 2 agents), and the privacy compliance dashboard. Monthly vendor cost: approximately $9,000.
 
 ### Phase 2: Months 4–6 — Platform
 
-Add Nango for 50+ enterprise integrations, WorkOS for SSO/SAML, E2B at scale for code sandbox. Expand to 10,000 beta users. Build remaining 4 agents (Code Engineer, Data Analyst, Workflow Bot, Web Navigator), team workspaces, and admin controls. Monthly vendor cost: approximately $12,000.
+Add Nango for 50+ enterprise integrations, WorkOS for SSO/SAML, E2B at scale for code sandbox. Expand to 10,000 beta users. Build remaining 4 agents (Code Engineer, Data Analyst, Workflow Bot, Web Navigator), goal lifecycle management (pause/resume/abort), auto-rotation for Vault secrets, team workspaces, and admin controls. Monthly vendor cost: approximately $14,500.
 
 ### Phase 3: Months 7–9 — Enterprise
 
-Upgrade to Palo Alto Prisma AIRS for AI security. Deploy Vanta for compliance automation. Complete SOC 2 Type II and HIPAA certification. Launch Shield Enterprise with on-premise/VPC deployment option. Begin dedicated enterprise sales motion targeting healthcare, legal, finance, and government. Monthly vendor cost: approximately $20,000.
+Upgrade to Palo Alto Prisma AIRS for AI security. Deploy Vanta for compliance automation. Complete SOC 2 Type II and HIPAA certification. Launch Shield Enterprise with on-premise/VPC deployment option. Team-shared Vault with envelope encryption and HSM integration. Goal audit logging for compliance. Begin dedicated enterprise sales motion targeting healthcare, legal, finance, and government. Monthly vendor cost: approximately $25,000.
 
 ### Phase 4: Months 10–12 — Scale
 
-Scale to 100,000+ teams. Open developer API for third-party agent development, launch Shield AI marketplace for custom agents, expand to international markets with region-specific compliance (EU AI Act, UK ICO). Evaluate Firecracker self-hosting to reduce sandbox costs at scale.
+Scale to 100,000+ teams. Open developer API for third-party agent development, Vault API for third-party agents, custom goal templates in the Shield AI marketplace, expand to international markets with region-specific compliance (EU AI Act, UK ICO). Evaluate Firecracker self-hosting to reduce sandbox costs at scale.
 
 ---
 
@@ -197,7 +203,7 @@ DuckDuckGo has spent 16 years building the most trusted privacy brand in consume
 
 Shield AI is that product. It takes DDG's existing infrastructure, existing user base, and existing brand positioning, and extends them into the fastest-growing market in technology (enterprise AI), with a differentiation that no competitor can replicate (verifiable zero-retention privacy).
 
-The approach is deliberately low-risk: a $15–30K validation sprint confirms demand before a dollar of engineering is spent. The technology stack is 70% bought and self-hosted, reducing the build to $1.5–3M for the custom IP layer. Monthly vendor costs of $12–25K are noise against any revenue scenario.
+The approach is deliberately low-risk: a $20–40K validation sprint confirms demand before a dollar of engineering is spent. The technology stack is 70% bought and self-hosted, reducing the build to $1.7–3.3M for the custom IP layer. Monthly vendor costs of $14.5–30.5K are noise against any revenue scenario.
 
 The conservative return is $163M in new ARR. The moderate return is $653M. The question is not whether the market exists — Abacus AI already proved it does. The question is whether DuckDuckGo will capture it before someone else builds privacy on top of AI, instead of AI on top of privacy.
 

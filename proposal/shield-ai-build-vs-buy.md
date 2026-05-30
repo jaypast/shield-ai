@@ -207,6 +207,42 @@ Alternative considered: Drata (comparable features, competitive pricing), Secure
 
 ---
 
+### 11. SECRETS MANAGEMENT
+
+What it does: Encrypts, stores, and manages user credentials (API keys, tokens, passwords, DSNs). Provides runtime injection into ephemeral E2B sandboxes so agents can authenticate with external services without exposing secrets in chat, logs, or model context. Includes real-time scanning to intercept secrets accidentally typed in conversation.
+
+**Decision: BUILD — Custom vault layer using libsodium/NaCl**
+
+This is a build decision for three reasons. First, privacy compliance — no third-party secrets manager (HashiCorp Vault, AWS Secrets Manager, Doppler) can guarantee zero-retention if secrets transit through their infrastructure, which violates DDG's core privacy contract. Second, the real-time chat scanner is a novel feature that doesn't exist in any off-the-shelf product — it requires deep integration with the chat input pipeline. Third, the runtime injection model (secrets resolved by name and injected as environment variables into E2B sandboxes) is specific to Shield's agent architecture.
+
+Architecture: AES-256-GCM encryption via libsodium with per-secret unique nonces. Master key derived from user credentials using Argon2id. Encrypted blobs stored in Postgres alongside metadata. Runtime injection resolves `{{SECRET_NAME}}` references, decrypts in memory, injects as environment variables into the E2B container, and wipes the decrypted value after injection. Client-side regex scanner intercepts known credential patterns (GitHub PATs, AWS keys, Slack tokens) on every keystroke before the message is sent. Auto-rotation worker calls provider token refresh APIs on a configurable schedule. Team-shared secrets use envelope encryption for the Teams/Enterprise tiers.
+
+What to build: Vault CRUD API, chat scanner module + interception UI, E2B injection bridge, auto-rotation worker, team key management layer.
+
+Cost: $0 (libsodium is open source, Postgres already in the stack) + 4–6 weeks backend engineering + 1–2 weeks frontend
+Privacy: Fully compatible by design — secrets never leave DDG's infrastructure in plaintext.
+Alternative considered: HashiCorp Vault (separate infrastructure, audit log conflicts with zero-retention), Infisical (open source but adds an unnecessary dependency), AWS Secrets Manager (managed service, violates zero-retention)
+
+---
+
+### 12. GOAL ORCHESTRATION ENGINE
+
+What it does: Accepts user-defined objectives (not prompts), decomposes them into multi-step execution plans, runs a recursive Plan → Execute → Verify loop, manages goal lifecycle (pause, resume, abort, inspect), selects which agents to deploy per step, handles blocker detection and human escalation, and enforces structured constraints.
+
+**Decision: BUILD — Custom orchestration layer on top of LangGraph**
+
+This is the core differentiator. The Goal Engine is not a wrapper around an LLM — it's a state machine that coordinates multiple agents, manages secrets injection, enforces user-defined constraints, and produces structured blocker reports when it can't proceed. No off-the-shelf framework provides this combination. LangGraph provides the graph execution primitives (state management, checkpointing, conditional branching); the goal-specific logic is entirely custom.
+
+Architecture: Every goal is defined by six components enforced by the UI — Outcome, Verification, Constraints, Boundaries, Iteration Policy, and Stop Condition. The Plan → Execute → Verify loop is implemented as a LangGraph graph with conditional edges. If verification fails, the engine loops back to Plan with failure context. Agent selection maps outcome intent to the appropriate agents per step. Blocker reports surface evidence, describe what was attempted, and present specific action options. Lifecycle management uses LangGraph's Postgres-backed checkpointing for pause/resume. MCP plugin architecture handles external tool access within defined boundaries.
+
+What to build: Goal schema parser/validator, Plan → Execute → Verify graph, agent selector, blocker report generator, lifecycle controller, real-time status API (WebSocket/SSE), chat integration for goal creation, secrets bridge for `{{}}` reference resolution.
+
+Cost: $0 (LangGraph is open source) + ~$2,500–$5,500/month infra (checkpointing, concurrent execution) + 8–12 weeks for 2 senior engineers
+Privacy: Fully compatible — goal state in DDG's Postgres, execution in ephemeral E2B containers, secrets injected at runtime and destroyed post-execution.
+Alternative considered: OpenAI Codex (closed-source, SaaS-only, violates zero-retention), CrewAI (lacks goal lifecycle and structured schemas), AutoGen (lacks human escalation protocol)
+
+---
+
 ## Architecture Summary
 
 ```
@@ -241,6 +277,9 @@ Alternative considered: Drata (comparable features, competitive pricing), Secure
 │  │        LangGraph — Self-Hosted (BUY)             │          │
 │  │        Agent Orchestration Framework              │          │
 │  │  ┌─────────────────────────────────────────────┐ │          │
+│  │  │  Goal Orchestration Engine (BUILD — core IP) │ │          │
+│  │  │  Plan → Execute → Verify / Lifecycle Mgmt   │ │          │
+│  │  ├─────────────────────────────────────────────┤ │          │
 │  │  │  Custom Agent Definitions (BUILD — core IP) │ │          │
 │  │  │  Research / Code / Docs / Data / Workflow   │ │          │
 │  │  └─────────────────────────────────────────────┘ │          │
@@ -251,6 +290,11 @@ Alternative considered: Drata (comparable features, competitive pricing), Secure
 │  │ Code Sandbox  │ │ Integrations │ │ Vector Store           │ │
 │  │    (BUY)      │ │   (BUY)      │ │   (BUY)                │ │
 │  └───────────────┘ └──────────────┘ └────────────────────────┘ │
+│                                                                 │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │       Secrets Vault — libsodium/NaCl (BUILD)             │  │
+│  │       AES-256-GCM / Runtime Injection / Chat Scanner     │  │
+│  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │          Langfuse — Self-Hosted (BUY)                    │  │
@@ -275,6 +319,10 @@ The **auto-route intelligence layer** sits on top of LiteLLM and analyzes query 
 
 The **custom agent definitions** are the specific agent personas (Research, Code, Docs, Data, Workflow, Browser) built as LangGraph graphs with custom tools, prompts, and state schemas. This is 4–6 weeks per agent, approximately 6 months total for all six.
 
+The **goal orchestration engine** sits on top of LangGraph and adds the Plan → Execute → Verify loop, structured goal schemas, lifecycle management (pause/resume/abort), agent selection per step, and structured blocker reporting with human escalation. This is the layer that turns Shield from an AI assistant into an AI coworker. Approximately 8–12 weeks for 2 senior engineers.
+
+The **secrets vault** provides encrypted credential storage (AES-256-GCM), runtime injection into E2B sandboxes, real-time chat scanning to intercept accidentally-typed secrets, auto-rotation, and team-shared secrets with envelope encryption. Approximately 4–6 weeks backend + 1–2 weeks frontend.
+
 The **privacy compliance dashboard** is the real-time transparency UI showing users exactly how their data flows (or doesn't). This is 2–3 weeks of engineering and is a key brand differentiator.
 
 The **frontend applications** (web, mobile, browser extension) are the user-facing interfaces. This is 3–4 months of engineering.
@@ -283,7 +331,7 @@ The **document template system** maps AI-generated content to professional docum
 
 The **integration wiring** connects all the bought components into a cohesive pipeline and ensures the zero-retention guarantee holds end-to-end. This is 2–3 months of engineering.
 
-Total custom engineering: approximately 8–10 months for a 12-person team, consistent with the original $2–4M estimate.
+Total custom engineering: approximately 10–12 months for a 12-person team, consistent with the $1.7–3.3M estimate. The Secrets Vault and Goal Orchestration Engine add approximately 14–18 weeks of engineering across Phases 1–2, absorbed by expanding the team from 10 to 12.
 
 ---
 
@@ -301,8 +349,10 @@ Total custom engineering: approximately 8–10 months for a 12-person team, cons
 | Auth / SSO | WorkOS | Commercial | $0–$2K | No (SaaS, auth only) |
 | Compliance | Vanta | Commercial | $800 | No (SaaS, config only) |
 | Doc rendering | python-pptx/docx/ReportLab | Open source | $0 | Yes (library) |
+| Secrets vault | libsodium/NaCl | Open source | $0 | Yes (built in) |
+| Goal engine infra | LangGraph checkpointing | Open source | $2,500–$5,500 | Yes (required) |
 
-**Total monthly vendor/infra cost at scale: approximately $12,000–$25,000/month**
+**Total monthly vendor/infra cost at scale: approximately $14,500–$30,500/month**
 
 This is dramatically lower than building equivalent functionality from scratch, and every privacy-sensitive component is self-hosted.
 
@@ -310,11 +360,11 @@ This is dramatically lower than building equivalent functionality from scratch, 
 
 ## Phase Strategy
 
-**Phase 1 (MVP, Months 1–3):** LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Total vendor cost: approximately $6,500/month. Focus engineering on auto-route intelligence, 2 agents (Research + Docs), and the frontend.
+**Phase 1 (MVP, Months 1–3):** LiteLLM (self-hosted) + LangGraph + Guardrails AI (open source) + Langfuse + Qdrant. Ship Shield Teams beta to 1,000 DDG power users. Core deliverables: auto-route intelligence layer, 2 agents (Research + Docs), ephemeral code sandbox via E2B, Secrets Vault (core CRUD, chat scanner, sandbox injection), basic Goals Engine (Plan/Execute/Verify loop with 2 agents), and the privacy compliance dashboard. Monthly vendor cost: approximately $9,000.
 
-**Phase 2 (Platform, Months 4–6):** Add E2B for code sandbox, Nango for integrations, WorkOS for enterprise auth. Total vendor cost: approximately $12,000/month. Build remaining 4 agents and the document template system.
+**Phase 2 (Platform, Months 4–6):** Add Nango for 50+ enterprise integrations, WorkOS for SSO/SAML, E2B at scale for code sandbox. Expand to 10,000 beta users. Build remaining 4 agents (Code Engineer, Data Analyst, Workflow Bot, Web Navigator), goal lifecycle management (pause/resume/abort), auto-rotation for Vault secrets, team workspaces, and admin controls. Monthly vendor cost: approximately $14,500.
 
-**Phase 3 (Enterprise, Months 7–9):** Upgrade to Prisma AIRS, add Vanta for compliance automation, begin SOC 2 certification. Total vendor cost: approximately $20,000/month. Build the privacy compliance dashboard and enterprise admin controls.
+**Phase 3 (Enterprise, Months 7–9):** Upgrade to Palo Alto Prisma AIRS for AI security. Deploy Vanta for compliance automation. Complete SOC 2 Type II and HIPAA certification. Launch Shield Enterprise with on-premise/VPC deployment option. Team-shared Vault with envelope encryption. HSM integration option. Goal audit logging for compliance. Begin dedicated enterprise sales motion. Monthly vendor cost: approximately $25,000.
 
 ---
 

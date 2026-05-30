@@ -54,6 +54,7 @@ const I = {
   activity: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
   file: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
   settings: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  edit: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
 };
 
 // ─── AGENT DEFINITIONS ───
@@ -382,9 +383,12 @@ function ChatTab({ onGoalTap }) {
 function GoalsTab({ initialGoalId }) {
   const [selectedGoal, setSelectedGoal] = useState(initialGoalId || null);
   const [filter, setFilter] = useState("all");
-  const [showSchema, setShowSchema] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editFields, setEditFields] = useState({});
 
   useEffect(() => { if (initialGoalId) setSelectedGoal(initialGoalId); }, [initialGoalId]);
+  // Reset edit mode when switching goals
+  useEffect(() => { setEditing(false); }, [selectedGoal]);
 
   const SC = {
     running: { color: T.green, label: "Running", icon: I.play },
@@ -431,6 +435,70 @@ function GoalsTab({ initialGoalId }) {
           <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
             {goal.agents.map(a => <AgentChip key={a} agentKey={a} />)}
           </div>
+        </div>
+
+        {/* Objectives (prominent + editable) */}
+        <div style={{ padding: 16, borderRadius: 14, background: T.card, border: `1px solid ${editing ? T.accent + "50" : T.border}`, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: T.text, fontFamily: F.mono, letterSpacing: "0.06em" }}>
+              OBJECTIVES
+            </span>
+            {!editing ? (
+              <button onClick={() => { setEditFields({ outcome: goal.outcome, verification: goal.verification, constraints: goal.constraints, boundaries: goal.boundaries, iterationPolicy: goal.iterationPolicy, stopCondition: goal.stopCondition }); setEditing(true); }} style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 8,
+                border: `1px solid ${T.border}`, background: "transparent", color: T.textMuted,
+                fontSize: 11, fontWeight: 600, fontFamily: F.mono, cursor: "pointer",
+              }}>{I.edit} Edit</button>
+            ) : (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => setEditing(false)} style={{
+                  padding: "5px 12px", borderRadius: 8, border: "none", background: T.accent,
+                  color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: F.mono, cursor: "pointer",
+                }}>Save</button>
+                <button onClick={() => setEditing(false)} style={{
+                  padding: "5px 11px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent",
+                  color: T.textMuted, fontSize: 11, fontWeight: 500, fontFamily: F.mono, cursor: "pointer",
+                }}>Cancel</button>
+              </div>
+            )}
+          </div>
+          {[
+            { key: "outcome", label: "Outcome", value: goal.outcome, color: T.green, hint: "The clear end-state you want" },
+            { key: "verification", label: "Verification", value: goal.verification, color: T.blue, hint: "How success is proven" },
+            { key: "constraints", label: "Constraints", value: goal.constraints, color: T.amber, hint: "Guardrails the agent must respect" },
+            { key: "boundaries", label: "Boundaries", value: goal.boundaries, color: T.purple, hint: "What it can read and write" },
+            { key: "iterationPolicy", label: "Iteration Policy", value: goal.iterationPolicy, color: T.cyan, hint: "How it decides the next step" },
+            { key: "stopCondition", label: "Stop Condition", value: goal.stopCondition, color: T.red, hint: "When to stop and ask you" },
+          ].map((f, i) => (
+            <div key={i} style={{ marginBottom: i < 5 ? 12 : 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: f.color, fontFamily: F.mono, marginBottom: 4, letterSpacing: "0.06em" }}>
+                {f.label}
+              </div>
+              {editing ? (
+                <textarea
+                  value={editFields[f.key] ?? f.value}
+                  onChange={e => setEditFields({ ...editFields, [f.key]: e.target.value })}
+                  rows={2}
+                  style={{
+                    width: "100%", padding: "8px 10px", borderRadius: 8,
+                    border: `1px solid ${f.color}40`, background: T.surface, color: T.text,
+                    fontSize: 12, fontFamily: F.body, lineHeight: 1.5, outline: "none",
+                    resize: "vertical", boxSizing: "border-box",
+                  }}
+                />
+              ) : (
+                <div style={{
+                  fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5,
+                  padding: "8px 10px", borderRadius: 8, background: T.surface, border: `1px solid ${T.border}`,
+                }}>{f.value}</div>
+              )}
+            </div>
+          ))}
+          {editing && (
+            <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 10, fontStyle: "italic" }}>
+              Editing objectives mid-run will re-plan remaining steps to match.
+            </div>
+          )}
         </div>
 
         {/* Blocker */}
@@ -503,43 +571,6 @@ function GoalsTab({ initialGoalId }) {
               </div>
             );
           })}
-        </div>
-
-        {/* Goal Schema (collapsible) */}
-        <div style={{ borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, marginBottom: 14, overflow: "hidden" }}>
-          <button onClick={() => setShowSchema(!showSchema)} style={{
-            width: "100%", padding: "14px 16px", background: "none", border: "none", cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "space-between",
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 700, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.08em" }}>
-              GOAL SCHEMA (6 COMPONENTS)
-            </span>
-            <span style={{ color: T.textDim, transition: "transform 0.2s", transform: showSchema ? "rotate(180deg)" : "none" }}>
-              {I.chevDown}
-            </span>
-          </button>
-          {showSchema && (
-            <div style={{ padding: "0 16px 16px" }}>
-              {[
-                { label: "Outcome", value: goal.outcome, color: T.green },
-                { label: "Verification", value: goal.verification, color: T.blue },
-                { label: "Constraints", value: goal.constraints, color: T.amber },
-                { label: "Boundaries", value: goal.boundaries, color: T.purple },
-                { label: "Iteration Policy", value: goal.iterationPolicy, color: T.cyan },
-                { label: "Stop Condition", value: goal.stopCondition, color: T.red },
-              ].map((f, i) => (
-                <div key={i} style={{ marginBottom: i < 5 ? 10 : 0 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: f.color, fontFamily: F.mono, marginBottom: 3, letterSpacing: "0.06em" }}>
-                    {f.label}
-                  </div>
-                  <div style={{
-                    fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5,
-                    padding: "7px 10px", borderRadius: 8, background: T.surface, border: `1px solid ${T.border}`,
-                  }}>{f.value}</div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Secrets + Integrations */}

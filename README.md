@@ -15,6 +15,8 @@ Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQu
 
 **[https://jaypast.github.io/shield-ai/deck.html](https://jaypast.github.io/shield-ai/deck.html)** — Pitch deck (10 slides, keyboard/swipe nav)
 
+**[https://jaypast.github.io/shield-ai/costs.html](https://jaypast.github.io/shield-ai/costs.html)** — Infrastructure cost model (3 revenue thresholds)
+
 ## Architecture
 
 ```

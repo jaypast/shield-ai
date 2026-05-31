@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shield AI — Infrastructure Cost Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;500;600;700;800;900&family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:#060A12;min-height:100vh}
+body{color:#C8D8E8;font-family:'Barlow',system-ui,sans-serif}
+
+.wrap{background:#060A12;min-height:100vh;padding:0 0 80px}
+
+.header{padding:40px 40px 32px;border-bottom:1px solid rgba(0,200,160,0.15);background:linear-gradient(180deg,rgba(0,200,160,0.04) 0%,transparent 100%)}
+.header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:12px}
+.logo-mark{display:flex;align-items:center;gap:12px}
+.shield-icon{width:36px;height:36px;background:linear-gradient(135deg,#00C8A0,#0080FF);clip-path:polygon(50% 0%,100% 20%,100% 70%,50% 100%,0% 70%,0% 20%);flex-shrink:0}
+.logo-text{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;letter-spacing:3px;color:#F0F8FF;text-transform:uppercase}
+.logo-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:#00C8A0;letter-spacing:2px;text-transform:uppercase}
+.classify-badge{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;color:#FF6B35;border:1px solid rgba(255,107,53,0.3);padding:4px 10px;background:rgba(255,107,53,0.05)}
+.header-title{font-family:'Barlow Condensed',sans-serif;font-size:40px;font-weight:800;color:#F0F8FF;letter-spacing:1px;line-height:1;margin-top:16px}
+.header-sub{font-size:14px;color:#6A8FA8;margin-top:6px;letter-spacing:0.3px}
+.back-link{font-family:'Share Tech Mono',monospace;font-size:10px;color:#4A6880;text-decoration:none;letter-spacing:1.5px;border:1px solid rgba(255,255,255,0.08);padding:5px 12px;transition:color 0.15s}
+.back-link:hover{color:#00C8A0;border-color:rgba(0,200,160,0.3)}
+
+.controls{padding:20px 40px;display:flex;align-items:center;gap:16px;border-bottom:1px solid rgba(255,255,255,0.05);flex-wrap:wrap}
+.toggle-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:2px;color:#4A6880;text-transform:uppercase}
+.toggle-group{display:flex;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:3px;overflow:hidden}
+.toggle-btn{padding:7px 18px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;background:none;border:none;color:#4A6880;cursor:pointer;transition:all 0.15s}
+.toggle-btn.active{background:rgba(0,200,160,0.12);color:#00C8A0}
+.note-text{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2A4858;letter-spacing:1px;margin-left:auto}
+
+.tiers-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid rgba(255,255,255,0.05)}
+.tier-col{border-right:1px solid rgba(255,255,255,0.06);padding:32px 32px 0;position:relative}
+.tier-col:last-child{border-right:none}
+
+.tier-header{margin-bottom:28px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.tier-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+.tier-name{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;letter-spacing:1px;text-transform:uppercase;color:#F0F8FF;line-height:1;margin-bottom:10px}
+.tier-arr{font-size:13px;color:#4A6880;display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.arr-val{font-weight:700;font-size:15px}
+.tier-conversion{font-family:'Share Tech Mono',monospace;font-size:10px;color:#2A4858;letter-spacing:1px}
+
+.cost-total-block{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);padding:16px 18px;margin-bottom:24px;position:relative;overflow:hidden}
+.cost-total-block::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.cost-total-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4A6880;margin-bottom:4px}
+.cost-total-val{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:32px;letter-spacing:0.5px;line-height:1}
+.cost-total-sub{font-size:11px;color:#4A6880;margin-top:6px;font-weight:400}
+.margin-badge{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:3px 8px;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:1px}
+
+.section-block{margin-bottom:24px}
+.section-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#2A4858;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05)}
+.section-note{font-size:10px;color:#2A4858;font-family:'Share Tech Mono',monospace;letter-spacing:0.5px;margin-bottom:10px}
+
+.cost-row{display:flex;align-items:flex-start;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:12px}
+.cost-row:last-child{border-bottom:none}
+.cost-row-left{flex:1}
+.cost-row-name{font-size:12px;font-weight:600;color:#9AB8CC;margin-bottom:2px}
+.cost-row-detail{font-family:'Share Tech Mono',monospace;font-size:9px;color:#2A4858;letter-spacing:0.5px;line-height:1.5;white-space:pre-line}
+.bar-track{height:2px;background:rgba(255,255,255,0.06);border-radius:1px;margin-top:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:1px}
+.cost-row-val{text-align:right;flex-shrink:0}
+.cost-val-main{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:0.3px}
+.cost-val-sub{font-family:'Share Tech Mono',monospace;font-size:9px;color:#2A4858;letter-spacing:0.5px;text-align:right}
+
+.subtotal-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);margin-top:8px}
+.subtotal-label{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#4A6880}
+.subtotal-val{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px}
+
+/* tier colors */
+.tier-conservative .tier-label,.tier-conservative .cost-total-val{color:#4A9EFF}
+.tier-conservative .cost-total-block::before{background:#4A9EFF}
+.tier-conservative .margin-badge{background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.2);color:#4A9EFF}
+
+.tier-moderate .tier-label,.tier-moderate .cost-total-val{color:#00C8A0}
+.tier-moderate .cost-total-block::before{background:#00C8A0}
+.tier-moderate .margin-badge{background:rgba(0,200,160,0.08);border:1px solid rgba(0,200,160,0.2);color:#00C8A0}
+
+.tier-aggressive .tier-label,.tier-aggressive .cost-total-val{color:#FF6B35}
+.tier-aggressive .cost-total-block::before{background:#FF6B35}
+.tier-aggressive .margin-badge{background:rgba(255,107,53,0.08);border:1px solid rgba(255,107,53,0.2);color:#FF6B35}
+
+.footer-note{padding:24px 40px 0;border-top:1px solid rgba(255,255,255,0.05);display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:32px}
+.footnote-item{font-size:11px;color:#2A4858;line-height:1.6}
+.footnote-item strong{color:#4A6880;font-weight:600}
+.spacer{height:32px}
+
+@media(max-width:900px){
+  .tiers-grid{grid-template-columns:1fr}
+  .tier-col{border-right:none;border-bottom:1px solid rgba(255,255,255,0.06)}
+  .footer-note{grid-template-columns:1fr}
+  .header,.controls{padding-left:20px;padding-right:20px}
+  .tier-col{padding:24px 20px 0}
+  .header-title{font-size:28px}
+  .note-text{display:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="logo-mark">
+        <div class="shield-icon"></div>
+        <div>
+          <div class="logo-text">Shield AI</div>
+          <div class="logo-sub">for QuackQuackMoo</div>
+        </div>
+      </div>
+      <a href="https://jaypast.github.io/shield-ai/deck.html" class="back-link">← Back to Deck</a>
+    </div>
+    <div class="classify-badge">⬛ CONFIDENTIAL — INTERNAL USE ONLY</div>
+    <div class="header-title">Infrastructure Cost Model</div>
+    <div class="header-sub">Three-tier revenue threshold analysis · Cloud, SaaS, LLM API & HSM/Private Cloud · May 2026</div>
+  </div>
+
+  <div class="controls">
+    <span class="toggle-label">View period</span>
+    <div class="toggle-group">
+      <button class="toggle-btn active" id="btn-mo" onclick="setMode(false)">Monthly</button>
+      <button class="toggle-btn" id="btn-yr" onclick="setMode(true)">Annual</button>
+    </div>
+    <span class="note-text">// LLM API costs are pass-through; all figures are operating costs, not capex</span>
+  </div>
+
+  <div class="tiers-grid" id="tiers-grid"></div>
+
+  <div class="footer-note">
+    <div class="footnote-item"><strong>LLM cost methodology:</strong> Weighted-avg per-user API cost by tier (Free ~$0, Plus ~$2.50, Pro ~$7, Teams ~$12, Enterprise ~usage-based). Volume discounts modeled at 0% (Conservative), 15% (Moderate), 25%+ (Aggressive). Fine-tuned in-house models assumed at Aggressive scale for Tier 1 tasks.</div>
+    <div class="footnote-item"><strong>Self-hosted infra:</strong> Modeled on AWS c5/r5 families. LiteLLM Proxy, LangGraph, Qdrant, Langfuse, and Secrets Vault are all self-hosted per the zero-retention architecture. Costs scale sub-linearly due to K8s bin-packing and reserved instance pricing.</div>
+    <div class="footnote-item"><strong>Key variable:</strong> E2B/Firecrackers (code sandbox) is the most volatile SaaS cost — each sandbox run spins an ephemeral microVM. At scale (Aggressive), this may warrant acquiring or building a sandboxing layer in-house. Engineering headcount not included — model covers infrastructure and tooling only.</div>
+  </div>
+
+</div>
+
+<script>
+const tiers = [
+  {
+    key:"conservative",label:"Conservative",conversion:"0.5% conversion",arr:"$163M",arrNum:163,
+    users:"~900K paying users",totalMo:4.58,margin:66.3,arrColor:"#4A9EFF",
+    categories:[
+      {name:"LLM API Costs",note:"Biggest variable cost — scales directly with usage",color:"#4A9EFF",subtotalMo:4.42,items:[
+        {name:"Claude / GPT-4o / Gemini routing",detail:"Weighted avg $2–7/user/mo by tier\nFree: near-zero · Plus: ~$2.50 · Pro: ~$7 · Teams: ~$12",mo:4.37,pct:95},
+        {name:"Enterprise dedicated capacity",detail:"~5 enterprise accounts · high-volume usage",mo:0.05,pct:1},
+      ]},
+      {name:"Self-Hosted Cloud Infrastructure",note:"AWS/GCP — all data-touching components",color:"#7B68EE",subtotalMo:0.118,items:[
+        {name:"LiteLLM Proxy + Redis cluster",detail:"8–12 c5.xlarge nodes · proxy routing + fallbacks",mo:0.018,pct:15},
+        {name:"LangGraph agent orchestration",detail:"16–24 c5.2xlarge · goal engine + agent runners",mo:0.038,pct:32},
+        {name:"Qdrant vector store",detail:"3-node cluster · 500GB SSD storage",mo:0.009,pct:7},
+        {name:"Langfuse observability",detail:"4 nodes + RDS Postgres · traces + cost analytics",mo:0.011,pct:9},
+        {name:"Secrets Vault (custom)",detail:"6 nodes + KMS · AES-256-GCM · runtime injection",mo:0.014,pct:12},
+        {name:"Networking / LB / egress",detail:"ALBs, VPC, CDN, inter-region egress",mo:0.010,pct:8},
+        {name:"Storage (S3, EBS, backups)",detail:"User files, vector embeddings, audit logs",mo:0.008,pct:7},
+        {name:"Monitoring / alerting",detail:"CloudWatch, PagerDuty, runbook infra",mo:0.010,pct:8},
+      ]},
+      {name:"SaaS Tools",note:"Third-party managed services",color:"#9B59B6",subtotalMo:0.0455,items:[
+        {name:"WorkOS (auth + SSO)",detail:"SAML/OIDC for enterprise · up to 100K MAU",mo:0.003,pct:7},
+        {name:"Vanta (SOC 2 / compliance)",detail:"Continuous monitoring · annual audit support",mo:0.0025,pct:5},
+        {name:"Guardrails AI / Prisma AIRS",detail:"Prompt + response security scanning · all queries",mo:0.012,pct:26},
+        {name:"E2B / Firecrackers (code sandbox)",detail:"Ephemeral containers · compute-intensive",mo:0.025,pct:54},
+        {name:"Nango (integrations)",detail:"Slack, GitHub, Jira, Drive, Notion auth layer",mo:0.003,pct:7},
+      ]},
+      {name:"Crypto / HSM / Private Cloud",note:"Hardware security + enterprise private deployment",color:"#E67E22",subtotalMo:0.013,items:[
+        {name:"AWS CloudHSM (2 HSMs)",detail:"Hardware key management for Enterprise vault",mo:0.005,pct:38},
+        {name:"Private cloud infrastructure",detail:"Dedicated VPC environment for Enterprise clients",mo:0.008,pct:62},
+      ]},
+    ]
+  },
+  {
+    key:"moderate",label:"Moderate",conversion:"2% conversion",arr:"$653M",arrNum:653,
+    users:"~3.8M paying users",totalMo:16.8,margin:69.1,arrColor:"#00C8A0",
+    categories:[
+      {name:"LLM API Costs",note:"~15% volume discount negotiated at scale",color:"#4A9EFF",subtotalMo:15.65,items:[
+        {name:"Multi-model routing (volume rate)",detail:"Weighted avg ~$4.50/user/mo after discount\nVolume agreements with Anthropic, OpenAI, Google",mo:15.5,pct:97},
+        {name:"Enterprise high-usage accounts",detail:"~30 enterprise · avg $50K/mo usage each",mo:0.15,pct:1},
+      ]},
+      {name:"Self-Hosted Cloud Infrastructure",note:"Multi-AZ deployment, auto-scaling clusters",color:"#7B68EE",subtotalMo:0.500,items:[
+        {name:"LiteLLM Proxy + Redis cluster",detail:"30–50 nodes across 3 AZs · HA routing",mo:0.065,pct:12},
+        {name:"LangGraph agent orchestration",detail:"80–120 c5.2xlarge · horizontal pod autoscaling",mo:0.145,pct:27},
+        {name:"Qdrant vector store",detail:"10-node cluster · 5TB storage · replicated",mo:0.038,pct:7},
+        {name:"Langfuse observability",detail:"15 nodes + RDS Multi-AZ · high-write workload",mo:0.042,pct:8},
+        {name:"Secrets Vault (custom)",detail:"20 nodes + HSM clusters · multi-region sync",mo:0.055,pct:10},
+        {name:"Networking / LB / CDN / egress",detail:"Multi-region ALBs, CloudFront, VPC peering",mo:0.070,pct:13},
+        {name:"Storage (S3, EBS, backups)",detail:"Multi-region replication · compliance retention",mo:0.045,pct:8},
+        {name:"Monitoring / SRE infra",detail:"Datadog Enterprise, PagerDuty, runbooks",mo:0.040,pct:7},
+      ]},
+      {name:"SaaS Tools",note:"Enterprise tier pricing across all vendors",color:"#9B59B6",subtotalMo:0.185,items:[
+        {name:"WorkOS (auth + SSO)",detail:"Enterprise SSO · unlimited MAU · SCIM provisioning",mo:0.012,pct:6},
+        {name:"Vanta (SOC 2 + ISO 27001)",detail:"Multi-framework compliance · 2 annual audits",mo:0.008,pct:4},
+        {name:"Guardrails AI / Prisma AIRS",detail:"~150M security scans/mo · enterprise rate",mo:0.050,pct:27},
+        {name:"E2B / Firecrackers (code sandbox)",detail:"High concurrency ephemeral containers · GPU pool",mo:0.100,pct:54},
+        {name:"Nango (integrations)",detail:"Unlimited connections · enterprise SLA",mo:0.015,pct:8},
+      ]},
+      {name:"Crypto / HSM / Private Cloud",note:"Multi-region HSM + dedicated enterprise deployments",color:"#E67E22",subtotalMo:0.080,items:[
+        {name:"AWS CloudHSM (multi-region)",detail:"8 HSMs across 3 regions · HA key management",mo:0.020,pct:25},
+        {name:"Private cloud deployments",detail:"Dedicated infrastructure for 30 Enterprise clients",mo:0.060,pct:75},
+      ]},
+    ]
+  },
+  {
+    key:"aggressive",label:"Aggressive",conversion:"5% conversion",arr:"$1.63B",arrNum:1630,
+    users:"~9M paying users",totalMo:38.3,margin:71.8,arrColor:"#FF6B35",
+    categories:[
+      {name:"LLM API Costs",note:"~25% discount + fine-tuned in-house models for common tasks",color:"#4A9EFF",subtotalMo:35.45,items:[
+        {name:"Multi-model routing (enterprise rate)",detail:"Weighted avg ~$4/user/mo · committed spend agreements\nSome tasks shifted to fine-tuned QQM models",mo:33.5,pct:95},
+        {name:"Enterprise high-usage accounts",detail:"~75 enterprise · avg $100K/mo usage each",mo:0.75,pct:2},
+        {name:"Fine-tuned model inference (in-house)",detail:"QQM-hosted open source models for Tier 1 tasks",mo:1.20,pct:3},
+      ]},
+      {name:"Self-Hosted Cloud Infrastructure",note:"Global multi-region fleet (US, EU, APAC)",color:"#7B68EE",subtotalMo:1.95,items:[
+        {name:"LiteLLM Proxy + Redis cluster",detail:"150+ nodes globally · sub-50ms routing SLA",mo:0.22,pct:10},
+        {name:"LangGraph agent orchestration",detail:"400+ nodes · global autoscaling · GPU burst pool",mo:0.58,pct:27},
+        {name:"Qdrant vector store",detail:"50-node cluster · 20TB+ · cross-region sync",mo:0.15,pct:7},
+        {name:"Langfuse observability",detail:"50 nodes + distributed DB · 100M+ traces/day",mo:0.18,pct:8},
+        {name:"Secrets Vault (custom)",detail:"80 nodes + HSM farm · global secret replication",mo:0.22,pct:10},
+        {name:"Networking / LB / CDN / egress",detail:"Global Anycast, CloudFront, multi-ISP peering",mo:0.30,pct:14},
+        {name:"Storage (S3, EBS, Glacier)",detail:"Global replication · data residency compliance",mo:0.18,pct:8},
+        {name:"Monitoring / SRE / NOC infra",detail:"24/7 NOC · Grafana, Datadog Enterprise",mo:0.12,pct:6},
+      ]},
+      {name:"SaaS Tools",note:"Full enterprise contracts — some may be replaced in-house",color:"#9B59B6",subtotalMo:0.715,items:[
+        {name:"WorkOS (auth + SSO)",detail:"Unlimited enterprise orgs · custom contracts",mo:0.040,pct:6},
+        {name:"Vanta (multi-framework compliance)",detail:"SOC2, ISO 27001, HIPAA, FedRAMP prep",mo:0.025,pct:3},
+        {name:"Guardrails AI / Prisma AIRS",detail:"500M+ scans/mo · may negotiate % of ARR deal",mo:0.200,pct:28},
+        {name:"E2B / Firecrackers (code sandbox)",detail:"Massive concurrent sandboxes · dedicated GPU fleet",mo:0.400,pct:56},
+        {name:"Nango (integrations)",detail:"Custom enterprise rate · white-label option",mo:0.050,pct:7},
+      ]},
+      {name:"Crypto / HSM / Private Cloud",note:"Enterprise-grade HSM farm + air-gapped deployments",color:"#E67E22",subtotalMo:0.400,items:[
+        {name:"Thales nShield / Utimaco HSM farm",detail:"40+ hardware HSMs across 5 global data centers",mo:0.100,pct:25},
+        {name:"Private cloud deployments",detail:"Dedicated infra for 75 Enterprise clients",mo:0.200,pct:50},
+        {name:"Air-gapped / gov-grade deployment",detail:"FedRAMP-adjacent sovereign cloud environments",mo:0.100,pct:25},
+      ]},
+    ]
+  }
+];
+
+let isAnnual = false;
+
+function fmt(mo, annual){
+  const v = annual ? mo*12 : mo;
+  if(v>=1000) return '$'+(v/1000).toFixed(1)+'B';
+  if(v>=1) return '$'+v.toFixed(1)+'M';
+  return '$'+(v*1000).toFixed(0)+'K';
+}
+function fmtSub(mo, annual){
+  const v = annual ? mo*12 : mo;
+  if(v>=1) return '$'+v.toFixed(2)+'M';
+  return '$'+(v*1000).toFixed(0)+'K';
+}
+
+function render(){
+  const grid = document.getElementById('tiers-grid');
+  grid.innerHTML = tiers.map(tier => `
+    <div class="tier-col tier-${tier.key}">
+      <div class="tier-header">
+        <div class="tier-label">${tier.label} scenario</div>
+        <div class="tier-name">${tier.label}</div>
+        <div class="tier-arr">Target ARR: <span class="arr-val" style="color:${tier.arrColor}">${tier.arr}</span></div>
+        <div class="tier-conversion">${tier.conversion} · ${tier.users}</div>
+      </div>
+      <div class="cost-total-block">
+        <div class="cost-total-label">Total infra cost · ${isAnnual?'annual':'monthly'}</div>
+        <div class="cost-total-val">${fmt(tier.totalMo, isAnnual)}</div>
+        <div class="cost-total-sub">${isAnnual ? '$'+tier.totalMo.toFixed(2)+'M/mo average' : '$'+(tier.totalMo*12).toFixed(0)+'M/yr run rate'}</div>
+        <div class="margin-badge">▲ ${tier.margin}% gross margin after infra</div>
+      </div>
+      ${tier.categories.map(cat => `
+        <div class="section-block">
+          <div class="section-label">${cat.name}</div>
+          <div class="section-note">${cat.note}</div>
+          ${cat.items.map(item => `
+            <div class="cost-row">
+              <div class="cost-row-left">
+                <div class="cost-row-name">${item.name}</div>
+                <div class="cost-row-detail">${item.detail}</div>
+                <div class="bar-track"><div class="bar-fill" style="width:${item.pct}%;background:${cat.color};opacity:0.6"></div></div>
+              </div>
+              <div class="cost-row-val">
+                <div class="cost-val-main" style="color:${cat.color}">${fmtSub(item.mo, isAnnual)}</div>
+                <div class="cost-val-sub">${item.pct}% of cat.</div>
+              </div>
+            </div>
+          `).join('')}
+          <div class="subtotal-row">
+            <span class="subtotal-label">Subtotal</span>
+            <span class="subtotal-val" style="color:${cat.color}">${fmtSub(cat.subtotalMo, isAnnual)}</span>
+          </div>
+        </div>
+      `).join('')}
+      <div class="spacer"></div>
+    </div>
+  `).join('');
+}
+
+function setMode(annual){
+  isAnnual = annual;
+  document.getElementById('btn-mo').classList.toggle('active', !annual);
+  document.getElementById('btn-yr').classList.toggle('active', annual);
+  render();
+}
+
+render();
+</script>
+</body>
+</html>

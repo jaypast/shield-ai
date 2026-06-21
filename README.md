@@ -1,21 +1,43 @@
-# Shield AI — Private AI Platform for QuackQuackMoo
+# Shield AI — Credential Layer for AI Agents
 
-> Every frontier AI model. Autonomous goal-directed agents. Encrypted secrets vault. Code execution sandbox. Enterprise integrations.  
-> **Zero data retention. Zero tracking. Zero compromise.**
+> Your agents act on your behalf. Stop handing them your keys.
 
 ---
 
 ## What Is This?
 
-Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQuackMoo as their next major product. It builds on the market demand that Abacus AI / ChatLLM validated — unified multi-model AI with agents, code execution, and enterprise integrations — and reimagines it on top of QuackQuackMoo's existing zero-retention privacy infrastructure.
+Shield AI is the credential layer for AI agents. A vault that stores API keys and injects scoped, short-lived credentials at agent runtime — so agents never handle raw keys, every action is logged, and any credential can be revoked in one click.
 
-## Live Demo
+Existing secrets managers (HashiCorp Vault, Doppler, Infisical) were built for DevOps teams managing servers and pipelines. They work — but they require a security engineer to configure and operate, and they treat AI agents as just another service account.
 
-**[https://jaypast.github.io/shield-ai](https://jaypast.github.io/shield-ai)** — Interactive prototype (mobile + desktop)
+Shield AI is built for the people actually deploying agents: founders, developers, and small teams who need credential governance without the operational overhead.
+
+## Live Prototype
+
+**[https://jaypast.github.io/shield-ai](https://jaypast.github.io/shield-ai)** — Interactive product demo (mobile + desktop)
 
 **[https://jaypast.github.io/shield-ai/deck.html](https://jaypast.github.io/shield-ai/deck.html)** — Pitch deck (10 slides, keyboard/swipe nav)
 
-**[https://jaypast.github.io/shield-ai/costs.html](https://jaypast.github.io/shield-ai/costs.html)** — Infrastructure cost model (3 revenue thresholds)
+**[https://jaypast.github.io/shield-ai/costs.html](https://jaypast.github.io/shield-ai/costs.html)** — Infrastructure cost model
+
+## Core Product
+
+**The Secrets Vault**
+
+- AES-256-GCM encrypted credential storage
+- Agents reference secrets by name (`{{GITHUB_PAT}}`) — credentials injected at runtime, never stored in code or environment files
+- Each agent gets a scoped, short-lived credential per run — not a shared service account
+- Full audit trail: every grant, action, and expiry logged and attributable
+- Instant revocation — kill any credential in one click
+- Real-time scanner intercepts accidentally-typed secrets before they reach the model
+
+**Who it's for**
+
+| Segment | Problem | How Shield AI solves it |
+|---------|---------|------------------------|
+| **Indie developers** | AI coding tools double baseline secret leak rates; one leaked key can trigger a $55K cloud bill | Keys never touch the codebase — runtime injection only, scoped to the current run |
+| **Agencies & small teams** | All client credentials in a shared vault; one breach exposes every client simultaneously | Per-client credential namespaces — Client A's keys are architecturally isolated from Client B |
+| **Platform builders** | Holding customer OAuth tokens in a flat backend database creates unlimited blast radius | Isolated vault namespaces per customer; runtime tokens instead of raw credentials |
 
 ## Architecture
 
@@ -24,61 +46,52 @@ Shield AI is a privacy-first AI super-platform designed to be pitched to QuackQu
 │                        SHIELD AI STACK                          │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────────────────┐ │
+│  ┌─────────────-┐  ┌──────────────┐  ┌────────────────────────┐ │
 │  │   Frontend   │  │  WorkOS/Auth │  │   Vanta (Compliance)   │ │
 │  │   (BUILD)    │  │    (BUY)     │  │        (BUY)           │ │
 │  └──────┬───────┘  └──────────────┘  └────────────────────────┘ │
 │         │                                                       │
 │  ┌──────▼──────────────────────────────────────────────────────┐│
-│  │              QQM Anonymization Relay (EXISTS)                ││
-│  │              PII Stripping Pipeline (EXISTS)                 ││
-│  └──────┬──────────────────────────────────────────────────────┘│
-│         │                                                       │
-│  ┌──────▼──────────────────────────────────────────────────────┐│
-│  │           Prisma AIRS / Guardrails AI (BUY)                 ││
-│  │           Prompt/Response Security Scanning                  ││
+│  │           Guardrails AI / Prisma AIRS (BUY)                 ││
+│  │           Prompt/Response Security Scanning                 ││
 │  └──────┬──────────────────────────────────────────────────────┘│
 │         │                                                       │
 │  ┌──────▼──────────────────────────────────────────────────────┐│
 │  │              LiteLLM Proxy — Self-Hosted (BUY)              ││
 │  │     Model Routing / Fallbacks / Cost Tracking / Budgets     ││
-│  │  ┌──────────────────────────────────────────────────────┐   ││
-│  │  │     Auto-Route Intelligence Layer (BUILD — custom)   │   ││
-│  │  └──────────────────────────────────────────────────────┘   ││
 │  └──────┬──────────────────────────────────────────────────────┘│
 │         │                                                       │
 │  ┌──────▼───────────────────────────────────────────┐          │
 │  │        LangGraph — Self-Hosted (BUY)             │          │
-│  │        Agent Orchestration Framework              │          │
+│  │        Agent Orchestration Framework             │          │
 │  │  ┌─────────────────────────────────────────────┐ │          │
-│  │  │  Goal Orchestration Engine (BUILD — core IP) │ │          │
+│  │  │  Goal Orchestration Engine (BUILD — core IP)│ │          │
 │  │  │  Plan → Execute → Verify / Lifecycle Mgmt   │ │          │
 │  │  ├─────────────────────────────────────────────┤ │          │
 │  │  │  Custom Agent Definitions (BUILD — core IP) │ │          │
 │  │  │  Research / Code / Docs / Data / Workflow   │ │          │
 │  │  └─────────────────────────────────────────────┘ │          │
 │  └──────┬───────────────────────────────────────────┘          │
-│         │                                                       │
+│         │                                                      │
 │  ┌──────▼────────┐ ┌──────────────┐ ┌────────────────────────┐ │
 │  │ E2B/Firecrackr│ │ Nango        │ │ Qdrant                 │ │
 │  │ Code Sandbox  │ │ Integrations │ │ Vector Store           │ │
 │  │    (BUY)      │ │   (BUY)      │ │   (BUY)                │ │
 │  └───────────────┘ └──────────────┘ └────────────────────────┘ │
-│                                                                 │
+│                                                                │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │       Secrets Vault — libsodium/NaCl (BUILD)             │  │
-│  │       AES-256-GCM / Runtime Injection / Chat Scanner     │  │
+│  │    Secrets Vault — libsodium/NaCl (BUILD — core IP)      │  │
+│  │    AES-256-GCM · Runtime Injection · Audit Log           │  │
+│  │    Per-Agent Scoping · Instant Revocation                │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                                                                 │
+│                                                                │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │          Langfuse — Self-Hosted (BUY)                    │  │
-│  │          Observability / Traces / Cost Analytics          │  │
+│  │          Observability / Traces / Cost Analytics         │  │
 │  └──────────────────────────────────────────────────────────┘  │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
 ```
-
-**Key principle:** Every component that touches user data is self-hosted. Everything else can be SaaS. This makes "zero retention" provable rather than promissory.
 
 ## Repository Structure
 
@@ -98,15 +111,13 @@ shield-ai/
 
 ## Prototype Features
 
-The working prototype demonstrates all seven platform pillars:
+The working prototype demonstrates:
 
-- **AI Router** — 100+ models with intelligent auto-routing and per-model privacy indicators
-- **Goals Engine** — Autonomous goal-directed orchestration. Define objectives, not prompts. Plan → Execute → Verify loop with lifecycle management (pause/resume/abort), structured schemas, and intelligent blocker reporting with human escalation
-- **Secrets Vault** — AES-256-GCM encrypted credential storage. Agents reference secrets by name (`{{GITHUB_PAT}}`) with runtime injection. Real-time chat scanner intercepts accidentally-typed secrets before they reach the model
-- **Agent Suite** — Six specialized agents (Deep Research, Code Engineer, Doc Generator, Data Analyst, Workflow Bot, Web Navigator) deployed by the Goals Engine as needed, with agent visibility on every goal card and execution step
-- **Code Sandbox** — Ephemeral container execution with zero data persistence and full Vault integration
-- **Enterprise Integrations** — Slack, Google Drive, GitHub, Jira, Notion, Confluence, Gmail, Teams
-- **Privacy Dashboard** — Real-time transparency into query lifecycle, PII stripping, Vault injection, and compliance status
+- **Secrets Vault** — AES-256-GCM encrypted storage with runtime injection and real-time secret scanner (intercepts keys pasted into chat before they reach the model)
+- **Goals Engine** — Credential-aware autonomous agent orchestration with live audit logging
+- **Code Sandbox** — Ephemeral containers with Vault integration (secrets injected at runtime, container destroyed after execution)
+- **Agent Suite** — Specialized agents (Deep Research, Code Engineer, Doc Generator, Data Analyst, Workflow Bot, Web Navigator) deployed by the Goals Engine
+- **Privacy Dashboard** — Live transparency into credential lifecycle, injection events, and audit trails
 
 ## Navigation
 
@@ -137,6 +148,11 @@ Settings (gear icon in header): Plans & Pricing, Model Preferences, Integrations
 3. Required dependencies: `react` (no external icon libraries — all SVGs inline)
 4. Responsive: auto-detects viewport width (mobile ≤700px, desktop >700px)
 
-## Confidential
+## Status
 
-This repository contains proprietary strategy, pricing, and architecture materials prepared for a pitch to QuackQuackMoo. Do not distribute publicly.
+Pre-seed. Seeking design partners in security-conscious engineering teams. 
+
+Contact: jasonrpast@gmail.com
+
+
+**Key principle:** Every component that touches user data is self-hosted. Everything else can be SaaS. This makes "zero retention" provable rather than promissory.

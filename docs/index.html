@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#080C14">
-  <title>Shield AI — Private AI Platform Prototype</title>
-  <meta name="description" content="Privacy-first AI super-platform prototype. Launch a newsletter without leaking your credentials.">
+  <title>Shield AI — Credential Layer for AI Agents</title>
+  <meta name="description" content="Shield AI: scoped, short-lived credentials injected at agent runtime. Agents never touch raw keys. Full audit trail, instant revocation.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🛡️</text></svg>">
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -22,7 +22,7 @@
 const { useState, useEffect, useRef, useCallback } = React;
 
 /* ═══════════════════════════════════════════
-   SHIELD AI — Goals Engine + Secrets Vault
+   SHIELD AI — Credential Layer for AI Agents
    Responsive: Mobile-first, scales to desktop
    ═══════════════════════════════════════════ */
 
@@ -90,99 +90,95 @@ const AGENTS = {
 
 // ─── MOCK DATA ───
 const SECRETS = [
-  { id: 1, name: "DIGITALOCEAN_TOKEN", service: "DigitalOcean", lastUsed: "3 min ago", masked: "dop_v1_****...X7kB", autoRotate: true, expiresIn: "23 days", status: "active" },
-  { id: 2, name: "CLOUDFLARE_TOKEN", service: "Cloudflare", lastUsed: "5 min ago", masked: "cf_****...m9Qf", autoRotate: false, expiresIn: null, status: "active" },
-  { id: 3, name: "MAILGUN_API_KEY", service: "Mailgun", lastUsed: "8 min ago", masked: "key-****...7pRe", autoRotate: true, expiresIn: "14 days", status: "active" },
-  { id: 4, name: "GHOST_ADMIN_KEY", service: "Ghost", lastUsed: "12 min ago", masked: "****:****...a4f2", autoRotate: false, expiresIn: null, status: "active" },
-  { id: 5, name: "DOMAIN_REGISTRAR_KEY", service: "Namecheap", lastUsed: "1 hr ago", masked: "nc_****...Gh3j", autoRotate: true, expiresIn: "2 days", status: "expiring" },
-  { id: 6, name: "SMTP_PASSWORD", service: "Self-hosted", lastUsed: "20 min ago", masked: "****...kL9w", autoRotate: false, expiresIn: null, status: "active" },
+  { id: 1, name: "GITHUB_PAT", service: "GitHub", lastUsed: "3 min ago", masked: "ghp_****...X7kB", autoRotate: true, expiresIn: "23 days", status: "active" },
+  { id: 2, name: "OPENAI_API_KEY", service: "OpenAI", lastUsed: "5 min ago", masked: "sk-****...m9Qf", autoRotate: false, expiresIn: null, status: "active" },
+  { id: 3, name: "STRIPE_SECRET_KEY", service: "Stripe", lastUsed: "8 min ago", masked: "sk_live_****...7pRe", autoRotate: true, expiresIn: "14 days", status: "active" },
+  { id: 4, name: "AWS_ACCESS_KEY", service: "AWS", lastUsed: "12 min ago", masked: "AKIA****...a4f2", autoRotate: false, expiresIn: null, status: "active" },
+  { id: 5, name: "ANTHROPIC_API_KEY", service: "Anthropic", lastUsed: "1 hr ago", masked: "sk-ant-****...Gh3j", autoRotate: true, expiresIn: "2 days", status: "expiring" },
+  { id: 6, name: "SUPABASE_DB_URL", service: "Supabase", lastUsed: "20 min ago", masked: "postgres://****...kL9w", autoRotate: false, expiresIn: null, status: "active" },
 ];
 
 const GOALS = [
   {
-    id: "g1", title: "Launch Privacy in AI Newsletter", status: "running", progress: 45,
+    id: "g1", title: "Wire Stripe billing to checkout", status: "running", progress: 45,
     phase: "Execute", iterations: 2, maxIterations: 8, created: "9 min ago",
-    agents: ["deep-research", "doc-generator", "code-engineer", "workflow-bot"],
-    outcome: "3 posts published, Ghost live on custom domain, first email scheduled",
-    verification: "Ghost responds at newsletter.jaypast.com, 3 posts visible, email queued in Mailgun",
-    constraints: "Use privacy-respecting services only — no Substack, no Google Analytics, no tracking pixels",
-    boundaries: "Read: research sources, drafts/ — Write: Ghost CMS, DNS records, Mailgun queue",
-    iterationPolicy: "Draft each post, self-review for tone, regenerate if off-brand",
-    stopCondition: "If domain verification fails or a service requires interactive login → report blocker",
-    secrets: ["DIGITALOCEAN_TOKEN", "CLOUDFLARE_TOKEN", "MAILGUN_API_KEY"],
-    integrations: ["DigitalOcean", "Cloudflare", "Mailgun"],
+    agents: ["code-engineer", "deep-research"],
+    outcome: "Stripe checkout session wired to /upgrade, integration tests passing, PR opened",
+    verification: "POST /create-checkout-session returns valid session_id, webhook endpoint receiving events",
+    constraints: "Read-only access to existing routes — no changes to auth middleware",
+    boundaries: "Read: src/billing/, test/ — Write: src/billing/stripe.py, tests/test_billing.py",
+    iterationPolicy: "Run tests after each change, fix failures before proceeding",
+    stopCondition: "If Stripe returns 401 or rate-limit errors → report blocker",
+    secrets: ["STRIPE_SECRET_KEY", "GITHUB_PAT"],
+    integrations: ["Stripe", "GitHub"],
     steps: [
-      { label: "Research trending privacy-in-AI topics", status: "done", time: "2:30", agent: "deep-research" },
-      { label: 'Write post: "Why Your AI Assistant Knows Too Much"', status: "done", time: "4:15", agent: "doc-generator" },
-      { label: 'Write post: "The Zero-Retention Revolution"', status: "running", time: "1:48", agent: "doc-generator" },
-      { label: 'Write post: "How to Audit Your AI Privacy"', status: "pending", agent: "doc-generator" },
-      { label: "Install Ghost on DigitalOcean droplet", status: "pending", agent: "code-engineer" },
-      { label: "Configure DNS for newsletter.jaypast.com", status: "pending", agent: "code-engineer" },
-      { label: "Import posts and schedule first email", status: "pending", agent: "workflow-bot" },
+      { label: "Read existing checkout route and auth flow", status: "done", time: "0:42", agent: "code-engineer" },
+      { label: "Implement Stripe checkout session creation", status: "done", time: "3:15", agent: "code-engineer" },
+      { label: "Write integration tests for billing endpoints", status: "running", time: "2:10", agent: "code-engineer" },
+      { label: "Fix test failures and edge cases", status: "pending", agent: "code-engineer" },
+      { label: "Open PR with description and test results", status: "pending", agent: "code-engineer" },
     ],
     logs: [
-      { time: "09:01", level: "info", msg: "Goal initiated. Planning newsletter launch end-to-end." },
-      { time: "09:01", level: "info", msg: "Plan: 7 steps. Engaging Research, Docs, Code, Workflow." },
-      { time: "09:02", level: "info", msg: "Deep Research scanning privacy-in-AI landscape..." },
-      { time: "09:04", level: "success", msg: "Found 12 trending topics. 3 gaps competitors don't cover." },
-      { time: "09:04", level: "info", msg: "Doc Generator drafting post 1 from research..." },
-      { time: "09:08", level: "success", msg: 'Post 1 complete: "Why Your AI Assistant Knows Too Much" (1,240 words).' },
-      { time: "09:09", level: "info", msg: "Drafting post 2: The Zero-Retention Revolution..." },
+      { time: "09:01", level: "info", msg: "Goal initiated. Analyzing codebase structure." },
+      { time: "09:01", level: "info", msg: "Found src/billing/ — 3 existing files. Reading auth middleware." },
+      { time: "09:02", level: "info", msg: "STRIPE_SECRET_KEY injected from Vault. Key never in context." },
+      { time: "09:05", level: "success", msg: "stripe.checkout.Session.create() implemented. 200 OK on test call." },
+      { time: "09:06", level: "info", msg: "Writing integration tests for happy path and webhook validation..." },
     ],
   },
   {
-    id: "g2", title: "Configure custom domain DNS", status: "blocked", progress: 70,
+    id: "g2", title: "Deploy to AWS staging", status: "blocked", progress: 70,
     phase: "Blocked", iterations: 2, maxIterations: 5, created: "6 min ago",
     agents: ["code-engineer"],
-    outcome: "newsletter.jaypast.com resolves to the Ghost server with valid SSL",
-    verification: "DNS lookup returns the droplet IP, HTTPS cert issued by Let's Encrypt",
-    constraints: "No changes to the root domain's existing records",
-    boundaries: "Read: DNS zone — Write: newsletter subdomain records only",
-    iterationPolicy: "Retry DNS propagation check every 30s, up to 5 min",
-    stopCondition: "If registrar requires interactive login → report blocker for human action",
-    secrets: ["CLOUDFLARE_TOKEN", "DOMAIN_REGISTRAR_KEY"],
-    integrations: ["Cloudflare", "Namecheap"],
+    outcome: "App running on staging.example.com with latest build, health checks passing",
+    verification: "GET staging.example.com/health returns 200, ECS service shows 2/2 tasks running",
+    constraints: "No changes to production environment — staging only",
+    boundaries: "Read: ECR images, ECS cluster config — Write: staging ECS service only",
+    iterationPolicy: "Retry deployment up to 3 times on failure, report after 3rd",
+    stopCondition: "If IAM permission error or rollback occurs → report blocker for human action",
+    secrets: ["AWS_ACCESS_KEY", "GITHUB_PAT"],
+    integrations: ["AWS", "GitHub"],
     steps: [
-      { label: "Create A record for subdomain", status: "done", time: "0:35", agent: "code-engineer" },
-      { label: "Request Let's Encrypt SSL cert", status: "done", time: "1:10", agent: "code-engineer" },
-      { label: "Verify domain ownership", status: "blocked", agent: "code-engineer" },
-      { label: "Confirm DNS propagation", status: "pending", agent: "code-engineer" },
+      { label: "Build Docker image and push to ECR", status: "done", time: "1:45", agent: "code-engineer" },
+      { label: "Update ECS task definition", status: "done", time: "0:55", agent: "code-engineer" },
+      { label: "Create IAM deployment role", status: "blocked", agent: "code-engineer" },
+      { label: "Trigger ECS service update", status: "pending", agent: "code-engineer" },
     ],
     blocker: {
-      title: "Domain verification required",
-      description: "Cloudflare needs a TXT record added to verify ownership of jaypast.com. Shield can't do this automatically — your registrar (Namecheap) requires an interactive login that can't be safely automated without exposing your account credentials.",
-      evidence: ["DNS lookup for newsletter.jaypast.com returns NXDOMAIN", "Ghost server is live and waiting for domain verification", "Estimated 5 minutes to resolve manually"],
-      actions: ["I've added the TXT record", "Show me how", "Skip for now"],
+      title: "IAM role approval required",
+      description: "Deploying to AWS staging requires creating an IAM role with S3 read and ECS write permissions. Shield won't do this automatically — elevated IAM permissions require your explicit authorization before they're created.",
+      evidence: ["Docker image pushed to ECR: app:v0.4.2-staging", "ECS cluster 'staging' is ready and waiting", "Missing IAM role: shield-staging-deploy with ecs:UpdateService, s3:GetObject"],
+      actions: ["I've created the IAM role", "Show me the policy JSON", "Skip for now"],
     },
     logs: [],
   },
   {
-    id: "g3", title: "Research privacy newsletter landscape", status: "done", progress: 100,
-    phase: "Complete", iterations: 1, maxIterations: 4, created: "45 min ago",
+    id: "g3", title: "Audit credential access this week", status: "done", progress: 100,
+    phase: "Complete", iterations: 1, maxIterations: 4, created: "2 hr ago",
     agents: ["deep-research"],
-    outcome: "Competitive analysis of top privacy newsletters with content gap recommendations",
-    verification: "Report covers 10+ newsletters with positioning analysis",
-    constraints: "Public sources only, no scraping behind paywalls",
-    boundaries: "Read: public web — Write: drafts/research.md",
-    iterationPolicy: "Synthesize across sources, flag conflicting data",
-    stopCondition: "Report delivered with actionable gaps",
+    outcome: "Full report of which agents accessed which credentials, flagging anomalies",
+    verification: "Report covers all 6 vault secrets with access counts and agent attribution",
+    constraints: "Read-only access to audit logs — no modifications",
+    boundaries: "Read: vault audit logs — Write: reports/credential-audit.md",
+    iterationPolicy: "Cross-reference agent IDs with goal IDs to attribute each access",
+    stopCondition: "Flag any credential accessed by an unexpected agent",
     secrets: [],
-    integrations: ["Web Search"],
+    integrations: [],
     steps: [
-      { label: "Survey top privacy newsletters", status: "done", time: "1:50", agent: "deep-research" },
-      { label: "Analyze content strategy & cadence", status: "done", time: "2:20", agent: "deep-research" },
-      { label: "Identify underserved topics", status: "done", time: "1:05", agent: "deep-research" },
-      { label: "Compile recommendations", status: "done", time: "0:40", agent: "deep-research" },
+      { label: "Pull vault access logs for 7-day window", status: "done", time: "0:18", agent: "deep-research" },
+      { label: "Map accesses to agent and goal IDs", status: "done", time: "0:45", agent: "deep-research" },
+      { label: "Identify anomalies and unused credentials", status: "done", time: "0:32", agent: "deep-research" },
+      { label: "Generate summary report", status: "done", time: "0:20", agent: "deep-research" },
     ],
     logs: [],
   },
 ];
 
 const CHAT_MESSAGES = [
-  { role: "user", text: "I want to start a newsletter about privacy in AI. Write 3 posts, set up a Ghost blog on my domain, configure DNS, and schedule the first email." },
-  { role: "assistant", text: "Love it. I'll plan this end-to-end and keep everything on privacy-respecting infrastructure — Ghost instead of Substack, your own server, no tracking. Setting up the goal now.", hasGoalRef: "g1" },
-  { role: "system", type: "goal_created", goalId: "g1", title: "Launch Privacy in AI Newsletter" },
-  { role: "assistant", text: "Goal is running. I've engaged Deep Research for topics, Doc Generator for writing, and Code Engineer for the Ghost setup. Currently on step 3 — writing your second post. Your DigitalOcean, Cloudflare, and Mailgun keys are being used securely through the Vault, so they never touch this chat. Track it all in the Goals tab." },
+  { role: "user", text: "Wire our Stripe billing to the checkout flow. Run the tests and open a PR when it's passing." },
+  { role: "assistant", text: "On it. Code Engineer has access to your Stripe and GitHub keys through the Vault — they won't touch this conversation. Setting up the goal now.", hasGoalRef: "g1" },
+  { role: "system", type: "goal_created", goalId: "g1", title: "Wire Stripe billing to checkout" },
+  { role: "assistant", text: "Goal is running. Step 1 done — read the existing checkout route. Now implementing the session creation. Your STRIPE_SECRET_KEY and GITHUB_PAT are injected from the Vault at runtime, scoped to this goal only. Track progress in the Goals tab." },
 ];
 
 // ─── SHARED COMPONENTS ───
@@ -676,15 +672,15 @@ function GoalsTab({ initialGoalId }) {
           </span>
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.body, lineHeight: 1.45, marginBottom: 14 }}>
-          Launch and grow a privacy-first newsletter that builds an engaged, owned audience without compromising reader or operator privacy.
+          Launch and grow an AI-powered product securely — agents building features, calling APIs, and deploying code without raw credentials ever touching a chat or log.
         </div>
         <div style={{ fontSize: 10, fontWeight: 700, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.08em", marginBottom: 8 }}>
           OBJECTIVES
         </div>
         {[
-          { n: "01", color: T.green, text: "Publish on privacy-respecting infrastructure — self-hosted Ghost, zero trackers." },
-          { n: "02", color: T.blue, text: "Build a portable, owned email list — no platform lock-in." },
-          { n: "03", color: T.purple, text: "Establish authority in the privacy-in-AI conversation." },
+          { n: "01", color: T.green, text: "Ship features faster: agents build, test, and open PRs while you review and merge." },
+          { n: "02", color: T.blue, text: "Zero credential exposure: every key scoped, injected at runtime, and automatically revoked." },
+          { n: "03", color: T.purple, text: "Full audit trail: every agent action logged and attributable — know exactly what ran and when." },
         ].map((o, i) => (
           <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: i < 2 ? 8 : 0 }}>
             <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 700, color: o.color, marginTop: 1, minWidth: 16 }}>{o.n}</span>
@@ -804,7 +800,7 @@ function GoalsTab({ initialGoalId }) {
    ═══════════════════════════════════════════ */
 function CodeTab() {
   const [running, setRunning] = useState(false);
-  const code = `import os\n\n# Secrets injected at runtime from Vault\ndo_token = os.environ["DIGITALOCEAN_TOKEN"]  # {{DIGITALOCEAN_TOKEN}}\ncf_token = os.environ["CLOUDFLARE_TOKEN"]    # {{CLOUDFLARE_TOKEN}}\n\n# Spin up Ghost on a private droplet — no Substack,\n# no third-party analytics, your server, your data.\nprint("Creating DigitalOcean droplet...")\nprint("Installing Ghost + Nginx + Let's Encrypt SSL...")\nprint("Pointing newsletter.jaypast.com via Cloudflare...")\n\n# Values exist ONLY inside this sandbox.\n# Destroyed after execution completes.\nprint(f"Provisioned as: {do_token[:8]}****")\nprint("Ghost live. Zero trackers installed.")`;
+  const code = `import os\n\n# Credentials injected at runtime from Vault\n# Raw values exist ONLY inside this ephemeral sandbox\nstripe_key = os.environ["STRIPE_SECRET_KEY"]  # {{STRIPE_SECRET_KEY}}\ngithub_pat  = os.environ["GITHUB_PAT"]         # {{GITHUB_PAT}}\n\n# Keys are scoped: STRIPE_SECRET_KEY → billing read/write only\n# GITHUB_PAT → write to feature/stripe-billing branch only\nimport stripe\nstripe.api_key = stripe_key\n\nsession = stripe.checkout.Session.create(\n    payment_method_types=["card"],\n    line_items=[{"price": "price_pro_monthly", "quantity": 1}],\n    mode="subscription",\n    success_url="https://app.example.com/welcome",\n    cancel_url="https://app.example.com/pricing",\n)\n\nimport subprocess\nsubprocess.run(["git", "add", "src/billing/stripe.py"])\nsubprocess.run(["git", "commit", "-m", "feat: add Stripe checkout session"])\nsubprocess.run(["git", "push", "origin", "feat/stripe-billing"])\n\nprint(f"Session created: {session.id[:12]}****")\nprint("PR opened. Credentials destroyed.")`;
 
   return (
     <div style={{ padding: "12px 16px", overflowY: "auto", height: "100%" }}>
@@ -824,7 +820,7 @@ function CodeTab() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           padding: "10px 14px", borderBottom: `1px solid ${T.border}`,
         }}>
-          <span style={{ fontSize: 12, color: T.textMuted, fontFamily: F.mono }}>ghost-setup.py</span>
+          <span style={{ fontSize: 12, color: T.textMuted, fontFamily: F.mono }}>stripe-billing.py</span>
           <div style={{ display: "flex", gap: 6 }}>
             <Badge color={T.green} small>{I.lock} Sandboxed</Badge>
           </div>
@@ -859,12 +855,12 @@ function CodeTab() {
           marginTop: 12, padding: 14, borderRadius: 12, background: T.card,
           border: `1px solid ${T.border}`, fontFamily: F.mono, fontSize: 11, color: T.green, lineHeight: 1.8,
         }}>
-          <div style={{ color: T.textDim }}>$ python ghost-setup.py</div>
-          <div>Creating DigitalOcean droplet...</div>
-          <div>Installing Ghost + Nginx + Let's Encrypt SSL...</div>
-          <div>Pointing newsletter.jaypast.com via Cloudflare...</div>
-          <div>Provisioned as: dop_v1_a****</div>
-          <div>Ghost live. Zero trackers installed.</div>
+          <div style={{ color: T.textDim }}>$ python stripe-billing.py</div>
+          <div>STRIPE_SECRET_KEY injected from Vault...</div>
+          <div>GITHUB_PAT injected from Vault...</div>
+          <div>Checkout session created: cs_live_a1b2****</div>
+          <div>Committed: feat: add Stripe checkout session</div>
+          <div>PR opened: feat/stripe-billing → main</div>
           <div style={{ color: T.textDim, marginTop: 4 }}>
             ▸ Secrets injected from Vault at runtime
             {"\n"}▸ Container will self-destruct in 30s
@@ -878,7 +874,7 @@ function CodeTab() {
       }}>
         <SectionLabel color={T.green}>Vault → Sandbox Pipeline</SectionLabel>
         {[
-          { step: "1", text: "Agent requests {{DIGITALOCEAN_TOKEN}} in execution plan" },
+          { step: "1", text: "Agent requests {{STRIPE_SECRET_KEY}} in execution plan" },
           { step: "2", text: "Goal Engine resolves reference from encrypted Vault" },
           { step: "3", text: "Value injected as env var inside ephemeral container" },
           { step: "4", text: "Container executes, returns result, self-destructs" },
@@ -946,7 +942,7 @@ function PrivacyTab() {
               <SectionLabel color={T.green}>How Shield Vault Works</SectionLabel>
               {[
                 "AES-256-GCM encryption at rest. Never stored in plaintext.",
-                "Agents reference by name: {{DIGITALOCEAN_TOKEN}} — never by value.",
+                "Agents reference by name: {{STRIPE_SECRET_KEY}} — never by value.",
                 "Values injected at runtime in ephemeral sandbox, then destroyed.",
                 "Real-time scanner intercepts secrets typed in chat before send.",
               ].map((txt, i) => (
@@ -982,9 +978,9 @@ function PrivacyTab() {
                   Add New Secret
                 </div>
                 {[
-                  { label: "Name", ph: "DIGITALOCEAN_TOKEN" },
-                  { label: "Value", ph: "dop_v1_xxxxxxxxxxxx", pw: true },
-                  { label: "Service", ph: "DigitalOcean" },
+                  { label: "Name", ph: "GITHUB_PAT" },
+                  { label: "Value", ph: "ghp_xxxxxxxxxxxx", pw: true },
+                  { label: "Service", ph: "GitHub" },
                 ].map((f, i) => (
                   <div key={i} style={{ marginBottom: 8 }}>
                     <label style={{ display: "block", fontSize: 10, color: T.textDim, fontFamily: F.mono, marginBottom: 3, letterSpacing: "0.05em" }}>
@@ -1068,10 +1064,10 @@ function PrivacyTab() {
                 fontFamily: F.mono, fontSize: 11, color: T.textDim, lineHeight: 1.8,
               }}>
                 <span style={{ color: T.textDim }}>// In your goal definition:</span>{"\n"}
-                <span style={{ color: T.purple }}>Set up Ghost using </span>
-                <span style={{ color: T.green, fontWeight: 700 }}>{"{{DIGITALOCEAN_TOKEN}}"}</span>{"\n"}
-                <span style={{ color: T.purple }}>Configure DNS via </span>
-                <span style={{ color: T.green, fontWeight: 700 }}>{"{{CLOUDFLARE_TOKEN}}"}</span>{"\n\n"}
+                <span style={{ color: T.purple }}>Wire billing using </span>
+                <span style={{ color: T.green, fontWeight: 700 }}>{"{{STRIPE_SECRET_KEY}}"}</span>{"\n"}
+                <span style={{ color: T.purple }}>Open PR via </span>
+                <span style={{ color: T.green, fontWeight: 700 }}>{"{{GITHUB_PAT}}"}</span>{"\n\n"}
                 <span style={{ color: T.textDim }}>// Shield injects at runtime.</span>{"\n"}
                 <span style={{ color: T.textDim }}>// Never in logs, chat, or traces.</span>
               </div>
@@ -1101,13 +1097,12 @@ function PrivacyTab() {
               {[
                 { label: "Your Device", sub: "Message composed locally", color: T.text },
                 { label: "Secret Scanner", sub: "Intercepts credentials before send", color: T.amber },
-                { label: "PII Stripping", sub: "Removes personal identifiers", color: T.blue },
                 { label: "Vault Injection", sub: "Resolves {{secret}} references for sandbox", color: T.green },
-                { label: "Anonymized Relay", sub: "Routed through QQM privacy proxy", color: T.purple },
+                { label: "Model Request", sub: "Sent with zero-retention contract", color: T.blue },
                 { label: "Model Response", sub: "Generated with zero-retention contract", color: T.cyan },
                 { label: "Session Destroyed", sub: "All traces deleted after delivery", color: T.privacyGreen },
               ].map((step, i) => (
-                <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 6 ? 10 : 0, alignItems: "flex-start" }}>
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 5 ? 10 : 0, alignItems: "flex-start" }}>
                   <div style={{
                     width: 20, height: 20, borderRadius: 10, flexShrink: 0,
                     background: step.color + "20", border: `2px solid ${step.color}`,
@@ -1147,9 +1142,9 @@ function SettingsPanel({ onClose }) {
   const [expandedTier, setExpandedTier] = useState(null);
 
   const tiers = [
-    { name: "Shield Free", price: "$0", period: "/mo", color: T.textMuted, features: ["3 models (GPT-4o mini, Claude Haiku, Llama)", "50 messages/day", "Basic code sandbox", "No data retention"], badge: "Current Quack.ai Free" },
-    { name: "Shield Plus", price: "$9.99", period: "/mo", color: T.blue, features: ["7 models including GPT-4o, Claude Sonnet", "Unlimited messages", "Full code sandbox", "Basic agent access", "3 Vault secrets"], badge: "Maps to QQM Plus" },
-    { name: "Shield Pro", price: "$19.99", period: "/mo", color: T.purple, features: ["All frontier models", "Priority routing", "All 6 agents + Goals Engine", "25 integrations", "25 Vault secrets + auto-rotate", "Goal lifecycle management"], badge: "Maps to QQM Pro", highlight: true },
+    { name: "Shield Free", price: "$0", period: "/mo", color: T.textMuted, features: ["3 models (GPT-4o mini, Claude Haiku, Llama)", "50 messages/day", "Basic code sandbox", "No data retention"], badge: "Free forever" },
+    { name: "Shield Plus", price: "$9.99", period: "/mo", color: T.blue, features: ["7 models including GPT-4o, Claude Sonnet", "Unlimited messages", "Full code sandbox", "Basic agent access", "3 Vault secrets"], badge: "Most popular" },
+    { name: "Shield Pro", price: "$19.99", period: "/mo", color: T.purple, features: ["All frontier models", "Priority routing", "All 6 agents + Goals Engine", "25 integrations", "25 Vault secrets + auto-rotate", "Goal lifecycle management"], highlight: true },
     { name: "Shield Teams", price: "$29.99", period: "/user/mo", color: T.accent, features: ["Everything in Pro", "Team workspaces + RBAC", "Shared Vault with team permissions", "50+ integrations", "SSO/SAML", "Admin dashboard", "Audit logging"], badge: "NEW Revenue" },
     { name: "Shield Enterprise", price: "Custom", period: "", color: T.amber, features: ["Everything in Teams", "On-prem / VPC deployment", "Unlimited Vault + HSM integration", "SOC 2 + HIPAA certified", "Custom model fine-tuning", "Dedicated support + SLA", "99.99% uptime guarantee"], badge: "$5K+/mo" },
   ];
@@ -1173,7 +1168,7 @@ function SettingsPanel({ onClose }) {
 
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ fontSize: 18, fontWeight: 800, color: T.text, fontFamily: F.display }}>Plans & Pricing</div>
-          <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>Maps directly to QQM's existing tiers</div>
+          <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>Choose the plan that fits your team</div>
         </div>
 
         {tiers.map((tier, i) => (
@@ -1220,9 +1215,9 @@ function SettingsPanel({ onClose }) {
           padding: 14, borderRadius: 14, background: `linear-gradient(135deg, ${T.accent}10, ${T.purple}08)`,
           border: `1px solid ${T.accent}20`, textAlign: "center", marginTop: 6,
         }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: F.mono, marginBottom: 4 }}>PROJECTED ARR</div>
-          <div style={{ fontSize: 28, fontWeight: 900, color: T.text, fontFamily: F.display }}>$575M</div>
-          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>Conservative estimate at 5% QQM user conversion</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: F.mono, marginBottom: 4 }}>EARLY ACCESS</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, fontFamily: F.display }}>Design partner program open</div>
+          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body, marginTop: 4 }}>First 10 teams get Pro free for 6 months</div>
         </div>
       </div>
     );
@@ -1301,11 +1296,11 @@ function SettingsPanel({ onClose }) {
 
         <SectionLabel>Connected</SectionLabel>
         {[
-          { name: "DigitalOcean", status: "Connected", color: T.green },
-          { name: "Cloudflare", status: "Connected", color: T.green },
-          { name: "Mailgun", status: "Connected", color: T.green },
-          { name: "Ghost", status: "Connected", color: T.green },
-          { name: "Namecheap", status: "Connected", color: T.green },
+          { name: "GitHub", status: "Connected", color: T.green },
+          { name: "Stripe", status: "Connected", color: T.green },
+          { name: "AWS", status: "Connected", color: T.green },
+          { name: "OpenAI", status: "Connected", color: T.green },
+          { name: "Supabase", status: "Connected", color: T.green },
         ].map((int, i) => (
           <div key={i} style={{
             padding: "12px 14px", borderRadius: 12, marginBottom: 8,
@@ -1379,7 +1374,7 @@ function SettingsPanel({ onClose }) {
 
       {/* App info */}
       <div style={{ textAlign: "center", marginTop: 20, fontSize: 10, color: T.textDim, fontFamily: F.mono }}>
-        Shield AI · Built for QuackQuackMoo · Zero-retention architecture
+        Shield AI · Credential Layer for AI Agents
       </div>
     </div>
   );

@@ -1,0 +1,1531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#080C14">
+  <title>Shield AI — Credential Layer for AI Agents</title>
+  <meta name="description" content="Shield AI: scoped, short-lived credentials injected at agent runtime. Agents never touch raw keys. Full audit trail, instant revocation.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🛡️</text></svg>">
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; width: 100%; background: #080C14; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ═══════════════════════════════════════════
+   SHIELD AI — Credential Layer for AI Agents
+   Responsive: Mobile-first, scales to desktop
+   ═══════════════════════════════════════════ */
+
+// ─── DESIGN TOKENS ───
+const T = {
+  bg: "#080C14", surface: "#0F1520", card: "#141C2C", cardHover: "#1A2438",
+  border: "#1C2840", borderLight: "#253352", borderActive: "#3B4F7A",
+  accent: "#DE5833", accentGlow: "rgba(222,88,51,0.12)", accentSoft: "#E8714F",
+  green: "#10B981", greenGlow: "rgba(16,185,129,0.1)", privacyGreen: "#22C55E",
+  blue: "#3B82F6", purple: "#8B5CF6", amber: "#F59E0B", cyan: "#06B6D4",
+  red: "#EF4444", pink: "#EC4899",
+  text: "#F1F5F9", textMuted: "#94A3B8", textDim: "#64748B",
+};
+
+const F = {
+  display: "'Outfit', system-ui, sans-serif",
+  body: "'DM Sans', system-ui, sans-serif",
+  mono: "'JetBrains Mono', 'SF Mono', monospace",
+};
+
+// ─── SVG ICONS (inline, no deps) ───
+const I = {
+  shield: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  chat: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+  target: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  code: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
+  dollar: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+  lock: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+  key: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+  eye: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  eyeOff: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>,
+  plus: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  send: <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>,
+  play: <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
+  pause: <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>,
+  check: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  alert: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  refresh: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  copy: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>,
+  trash: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+  chevRight: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  chevDown: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  arrowLeft: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+  bot: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>,
+  plug: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v6m0 12v2m-6-8h12M6 12a6 6 0 0 1 12 0"/></svg>,
+  zap: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  search: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  terminal: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>,
+  globe: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+  activity: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+  file: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>,
+  settings: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  edit: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>,
+};
+
+// ─── AGENT DEFINITIONS ───
+const AGENTS = {
+  "code-engineer": { name: "Code Engineer", color: T.cyan, icon: I.terminal, short: "Code" },
+  "deep-research": { name: "Deep Research", color: T.purple, icon: I.search, short: "Research" },
+  "doc-generator": { name: "Doc Generator", color: T.blue, icon: I.file, short: "Docs" },
+  "data-analyst": { name: "Data Analyst", color: T.amber, icon: I.activity, short: "Data" },
+  "web-navigator": { name: "Web Navigator", color: T.green, icon: I.globe, short: "Web" },
+  "workflow-bot": { name: "Workflow Bot", color: T.pink, icon: I.zap, short: "Workflow" },
+};
+
+// ─── MOCK DATA ───
+const SECRETS = [
+  { id: 1, name: "GITHUB_PAT", service: "GitHub", lastUsed: "3 min ago", masked: "ghp_****...X7kB", autoRotate: true, expiresIn: "23 days", status: "active" },
+  { id: 2, name: "OPENAI_API_KEY", service: "OpenAI", lastUsed: "5 min ago", masked: "sk-****...m9Qf", autoRotate: false, expiresIn: null, status: "active" },
+  { id: 3, name: "STRIPE_SECRET_KEY", service: "Stripe", lastUsed: "8 min ago", masked: "sk_live_****...7pRe", autoRotate: true, expiresIn: "14 days", status: "active" },
+  { id: 4, name: "AWS_ACCESS_KEY", service: "AWS", lastUsed: "12 min ago", masked: "AKIA****...a4f2", autoRotate: false, expiresIn: null, status: "active" },
+  { id: 5, name: "ANTHROPIC_API_KEY", service: "Anthropic", lastUsed: "1 hr ago", masked: "sk-ant-****...Gh3j", autoRotate: true, expiresIn: "2 days", status: "expiring" },
+  { id: 6, name: "SUPABASE_DB_URL", service: "Supabase", lastUsed: "20 min ago", masked: "postgres://****...kL9w", autoRotate: false, expiresIn: null, status: "active" },
+];
+
+const GOALS = [
+  {
+    id: "g1", title: "Wire Stripe billing to checkout", status: "running", progress: 45,
+    phase: "Execute", iterations: 2, maxIterations: 8, created: "9 min ago",
+    agents: ["code-engineer", "deep-research"],
+    outcome: "Stripe checkout session wired to /upgrade, integration tests passing, PR opened",
+    verification: "POST /create-checkout-session returns valid session_id, webhook endpoint receiving events",
+    constraints: "Read-only access to existing routes — no changes to auth middleware",
+    boundaries: "Read: src/billing/, test/ — Write: src/billing/stripe.py, tests/test_billing.py",
+    iterationPolicy: "Run tests after each change, fix failures before proceeding",
+    stopCondition: "If Stripe returns 401 or rate-limit errors → report blocker",
+    secrets: ["STRIPE_SECRET_KEY", "GITHUB_PAT"],
+    integrations: ["Stripe", "GitHub"],
+    steps: [
+      { label: "Read existing checkout route and auth flow", status: "done", time: "0:42", agent: "code-engineer" },
+      { label: "Implement Stripe checkout session creation", status: "done", time: "3:15", agent: "code-engineer" },
+      { label: "Write integration tests for billing endpoints", status: "running", time: "2:10", agent: "code-engineer" },
+      { label: "Fix test failures and edge cases", status: "pending", agent: "code-engineer" },
+      { label: "Open PR with description and test results", status: "pending", agent: "code-engineer" },
+    ],
+    logs: [
+      { time: "09:01", level: "info", msg: "Goal initiated. Analyzing codebase structure." },
+      { time: "09:01", level: "info", msg: "Found src/billing/ — 3 existing files. Reading auth middleware." },
+      { time: "09:02", level: "info", msg: "STRIPE_SECRET_KEY injected from Vault. Key never in context." },
+      { time: "09:05", level: "success", msg: "stripe.checkout.Session.create() implemented. 200 OK on test call." },
+      { time: "09:06", level: "info", msg: "Writing integration tests for happy path and webhook validation..." },
+    ],
+  },
+  {
+    id: "g2", title: "Deploy to AWS staging", status: "blocked", progress: 70,
+    phase: "Blocked", iterations: 2, maxIterations: 5, created: "6 min ago",
+    agents: ["code-engineer"],
+    outcome: "App running on staging.example.com with latest build, health checks passing",
+    verification: "GET staging.example.com/health returns 200, ECS service shows 2/2 tasks running",
+    constraints: "No changes to production environment — staging only",
+    boundaries: "Read: ECR images, ECS cluster config — Write: staging ECS service only",
+    iterationPolicy: "Retry deployment up to 3 times on failure, report after 3rd",
+    stopCondition: "If IAM permission error or rollback occurs → report blocker for human action",
+    secrets: ["AWS_ACCESS_KEY", "GITHUB_PAT"],
+    integrations: ["AWS", "GitHub"],
+    steps: [
+      { label: "Build Docker image and push to ECR", status: "done", time: "1:45", agent: "code-engineer" },
+      { label: "Update ECS task definition", status: "done", time: "0:55", agent: "code-engineer" },
+      { label: "Create IAM deployment role", status: "blocked", agent: "code-engineer" },
+      { label: "Trigger ECS service update", status: "pending", agent: "code-engineer" },
+    ],
+    blocker: {
+      title: "IAM role approval required",
+      description: "Deploying to AWS staging requires creating an IAM role with S3 read and ECS write permissions. Shield won't do this automatically — elevated IAM permissions require your explicit authorization before they're created.",
+      evidence: ["Docker image pushed to ECR: app:v0.4.2-staging", "ECS cluster 'staging' is ready and waiting", "Missing IAM role: shield-staging-deploy with ecs:UpdateService, s3:GetObject"],
+      actions: ["I've created the IAM role", "Show me the policy JSON", "Skip for now"],
+    },
+    logs: [],
+  },
+  {
+    id: "g3", title: "Audit credential access this week", status: "done", progress: 100,
+    phase: "Complete", iterations: 1, maxIterations: 4, created: "2 hr ago",
+    agents: ["deep-research"],
+    outcome: "Full report of which agents accessed which credentials, flagging anomalies",
+    verification: "Report covers all 6 vault secrets with access counts and agent attribution",
+    constraints: "Read-only access to audit logs — no modifications",
+    boundaries: "Read: vault audit logs — Write: reports/credential-audit.md",
+    iterationPolicy: "Cross-reference agent IDs with goal IDs to attribute each access",
+    stopCondition: "Flag any credential accessed by an unexpected agent",
+    secrets: [],
+    integrations: [],
+    steps: [
+      { label: "Pull vault access logs for 7-day window", status: "done", time: "0:18", agent: "deep-research" },
+      { label: "Map accesses to agent and goal IDs", status: "done", time: "0:45", agent: "deep-research" },
+      { label: "Identify anomalies and unused credentials", status: "done", time: "0:32", agent: "deep-research" },
+      { label: "Generate summary report", status: "done", time: "0:20", agent: "deep-research" },
+    ],
+    logs: [],
+  },
+];
+
+const CHAT_MESSAGES = [
+  { role: "user", text: "Wire our Stripe billing to the checkout flow. Run the tests and open a PR when it's passing." },
+  { role: "assistant", text: "On it. Code Engineer has access to your Stripe and GitHub keys through the Vault — they won't touch this conversation. Setting up the goal now.", hasGoalRef: "g1" },
+  { role: "system", type: "goal_created", goalId: "g1", title: "Wire Stripe billing to checkout" },
+  { role: "assistant", text: "Goal is running. Step 1 done — read the existing checkout route. Now implementing the session creation. Your STRIPE_SECRET_KEY and GITHUB_PAT are injected from the Vault at runtime, scoped to this goal only. Track progress in the Goals tab." },
+];
+
+// ─── SHARED COMPONENTS ───
+const Badge = ({ color, children, glow, small }) => (
+  <span style={{
+    display: "inline-flex", alignItems: "center", gap: 4,
+    padding: small ? "2px 7px" : "3px 10px", borderRadius: 6,
+    fontSize: small ? 10 : 11, fontFamily: F.mono, fontWeight: 600,
+    letterSpacing: "0.03em", color,
+    background: color + "18",
+    boxShadow: glow ? `0 0 12px ${color}30` : "none",
+  }}>{children}</span>
+);
+
+const AgentChip = ({ agentKey, small }) => {
+  const a = AGENTS[agentKey];
+  if (!a) return null;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", gap: 4,
+      padding: small ? "2px 6px" : "3px 8px", borderRadius: 6,
+      background: a.color + "15", border: `1px solid ${a.color}25`,
+      fontSize: small ? 9 : 10, fontFamily: F.mono, fontWeight: 600, color: a.color,
+    }}>
+      {a.icon} {small ? a.short : a.name}
+    </span>
+  );
+};
+
+const ProgressBar = ({ value, color = T.green, h = 4 }) => (
+  <div style={{ width: "100%", height: h, borderRadius: h, background: T.border, overflow: "hidden" }}>
+    <div style={{
+      width: `${value}%`, height: "100%", borderRadius: h,
+      background: `linear-gradient(90deg, ${color}, ${color}cc)`,
+      boxShadow: `0 0 8px ${color}40`,
+      transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)",
+    }} />
+  </div>
+);
+
+const Pill = ({ active, onClick, children }) => (
+  <button onClick={onClick} style={{
+    padding: "7px 14px", borderRadius: 8, whiteSpace: "nowrap",
+    border: `1px solid ${active ? T.accent + "50" : T.border}`,
+    background: active ? T.accent + "15" : "transparent",
+    color: active ? T.accent : T.textMuted,
+    fontSize: 12, fontFamily: F.body, fontWeight: 500, cursor: "pointer",
+  }}>{children}</button>
+);
+
+const SubToggle = ({ options, active, onChange }) => (
+  <div style={{
+    display: "flex", margin: "0 16px 16px", padding: 3, borderRadius: 10,
+    background: T.surface, border: `1px solid ${T.border}`,
+  }}>
+    {options.map(o => (
+      <button key={o.key} onClick={() => onChange(o.key)} style={{
+        flex: 1, padding: "9px 8px", borderRadius: 8, border: "none", cursor: "pointer",
+        background: active === o.key ? T.card : "transparent",
+        color: active === o.key ? T.text : T.textMuted,
+        fontSize: 12, fontWeight: 600, fontFamily: F.body,
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+        boxShadow: active === o.key ? `0 2px 8px ${T.bg}` : "none",
+        transition: "all 0.2s",
+      }}>
+        {o.icon} {o.label}
+      </button>
+    ))}
+  </div>
+);
+
+const SectionLabel = ({ children, color = T.textDim }) => (
+  <div style={{
+    fontSize: 10, fontWeight: 700, color, fontFamily: F.mono,
+    letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8,
+  }}>{children}</div>
+);
+
+/* ═══════════════════════════════════════════
+   TAB 1: CHAT (with secret scanner)
+   ═══════════════════════════════════════════ */
+function ChatTab({ onGoalTap }) {
+  const [input, setInput] = useState("");
+  const [scanAlert, setScanAlert] = useState(false);
+  const [messages, setMessages] = useState(CHAT_MESSAGES);
+  const bottomRef = useRef(null);
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+
+  const handleInput = (val) => {
+    setInput(val);
+    // Simulate secret detection
+    const patterns = [/ghp_[A-Za-z0-9]{20,}/, /sk-[A-Za-z0-9]{20,}/, /AKIA[A-Z0-9]{16}/, /xoxb-/, /dop_v1_[A-Za-z0-9]{20,}/, /key-[a-f0-9]{20,}/];
+    if (patterns.some(p => p.test(val))) setScanAlert(true);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+        {/* Privacy indicator */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "8px 0 16px", borderBottom: `1px solid ${T.border}`, marginBottom: 12,
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: 3, background: T.privacyGreen, boxShadow: `0 0 6px ${T.privacyGreen}60` }} />
+          <span style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.04em" }}>
+            Zero-retention · Encrypted · Ephemeral
+          </span>
+        </div>
+
+        {messages.map((msg, i) => {
+          if (msg.type === "goal_created") {
+            return (
+              <div key={i} onClick={() => onGoalTap?.(msg.goalId)} style={{
+                margin: "12px 0", padding: "12px 14px", borderRadius: 12,
+                background: `linear-gradient(135deg, ${T.accent}10, ${T.purple}08)`,
+                border: `1px solid ${T.accent}25`, cursor: "pointer",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <div style={{ color: T.accent }}>{I.target}</div>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: F.mono }}>GOAL CREATED</span>
+                </div>
+                <div style={{ fontSize: 13, color: T.text, fontFamily: F.body }}>{msg.title}</div>
+                <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body, marginTop: 4 }}>Tap to view progress →</div>
+              </div>
+            );
+          }
+          return (
+            <div key={i} style={{
+              display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+              marginBottom: 10,
+            }}>
+              <div style={{
+                maxWidth: "82%", padding: "10px 14px", borderRadius: 14,
+                background: msg.role === "user" ? T.accent : T.card,
+                border: msg.role === "user" ? "none" : `1px solid ${T.border}`,
+                borderBottomRightRadius: msg.role === "user" ? 4 : 14,
+                borderBottomLeftRadius: msg.role === "user" ? 14 : 4,
+              }}>
+                <div style={{
+                  fontSize: 13, lineHeight: 1.55, fontFamily: F.body,
+                  color: msg.role === "user" ? "#fff" : T.text,
+                }}>{msg.text}</div>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Secret Scanner Alert */}
+      {scanAlert && (
+        <div style={{
+          margin: "0 12px 8px", padding: "12px 14px", borderRadius: 12,
+          background: `linear-gradient(135deg, ${T.amber}12, ${T.red}08)`,
+          border: `1px solid ${T.amber}35`,
+          animation: "fadeUp 0.3s ease-out",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div style={{ color: T.amber }}>{I.alert}</div>
+            <span style={{ fontSize: 12, fontWeight: 700, color: T.amber, fontFamily: F.body }}>
+              Secret detected — blocked from sending
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5, marginBottom: 10 }}>
+            Shield intercepted what appears to be an API key. It will not be sent to the model. Store it in the Vault and reference it as a variable instead.
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => { setScanAlert(false); setInput(""); }} style={{
+              padding: "7px 14px", borderRadius: 8, border: "none",
+              background: T.amber, color: T.bg, fontSize: 12, fontWeight: 700, fontFamily: F.body, cursor: "pointer",
+            }}>Store in Vault</button>
+            <button onClick={() => setScanAlert(false)} style={{
+              padding: "7px 14px", borderRadius: 8, border: `1px solid ${T.border}`,
+              background: "transparent", color: T.textMuted, fontSize: 12, fontFamily: F.body, cursor: "pointer",
+            }}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
+      {/* Input */}
+      <div style={{ padding: "8px 12px 12px", borderTop: `1px solid ${T.border}` }}>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "8px 12px", borderRadius: 14, background: T.surface, border: `1px solid ${T.border}`,
+        }}>
+          <input
+            value={input}
+            onChange={e => handleInput(e.target.value)}
+            placeholder="Message Shield AI..."
+            style={{
+              flex: 1, border: "none", background: "transparent", outline: "none",
+              color: T.text, fontSize: 14, fontFamily: F.body,
+            }}
+          />
+          <button style={{
+            width: 36, height: 36, borderRadius: 10, border: "none",
+            background: input.trim() ? T.accent : T.border,
+            color: input.trim() ? "#fff" : T.textDim,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.2s",
+          }}>{I.send}</button>
+        </div>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          marginTop: 6, fontSize: 10, color: T.textDim, fontFamily: F.mono,
+        }}>
+          {I.shield} Vault secrets auto-detected · Try pasting "dop_v1_abc123..."
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TAB 2: GOALS ENGINE (replaces Agents)
+   ═══════════════════════════════════════════ */
+function GoalsTab({ initialGoalId }) {
+  const [selectedGoal, setSelectedGoal] = useState(initialGoalId || null);
+  const [filter, setFilter] = useState("all");
+  const [editing, setEditing] = useState(false);
+  const [editFields, setEditFields] = useState({});
+
+  useEffect(() => { if (initialGoalId) setSelectedGoal(initialGoalId); }, [initialGoalId]);
+  // Reset edit mode when switching goals
+  useEffect(() => { setEditing(false); }, [selectedGoal]);
+
+  const SC = {
+    running: { color: T.green, label: "Running", icon: I.play },
+    blocked: { color: T.amber, label: "Blocked", icon: I.alert },
+    done: { color: T.blue, label: "Complete", icon: I.check },
+    paused: { color: T.textDim, label: "Paused", icon: I.pause },
+  };
+
+  const filtered = filter === "all" ? GOALS : GOALS.filter(g => g.status === filter);
+
+  // ─── GOAL DETAIL VIEW ───
+  if (selectedGoal) {
+    const goal = GOALS.find(g => g.id === selectedGoal);
+    if (!goal) return null;
+    const sc = SC[goal.status];
+
+    return (
+      <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 80px" }}>
+        <button onClick={() => setSelectedGoal(null)} style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+          color: T.textMuted, fontSize: 13, fontFamily: F.body, cursor: "pointer", padding: 0, marginBottom: 14,
+        }}>{I.arrowLeft} All Goals</button>
+
+        {/* Header */}
+        <div style={{
+          padding: 16, borderRadius: 14,
+          background: `linear-gradient(135deg, ${sc.color}10, ${T.card})`,
+          border: `1px solid ${sc.color}25`, marginBottom: 14,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+            <Badge color={sc.color} glow>{sc.icon} {sc.label}</Badge>
+            <span style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono }}>
+              Iter {goal.iterations}/{goal.maxIterations} · {goal.created}
+            </span>
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.body, lineHeight: 1.4, marginBottom: 10 }}>
+            {goal.title}
+          </div>
+          <ProgressBar value={goal.progress} color={sc.color} h={5} />
+          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono, marginTop: 6 }}>
+            {goal.progress}% · Phase: {goal.phase}
+          </div>
+          {/* Active Agents */}
+          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+            {goal.agents.map(a => <AgentChip key={a} agentKey={a} />)}
+          </div>
+        </div>
+
+        {/* Objectives (prominent + editable) */}
+        <div style={{ padding: 16, borderRadius: 14, background: T.card, border: `1px solid ${editing ? T.accent + "50" : T.border}`, marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: T.text, fontFamily: F.mono, letterSpacing: "0.06em" }}>
+              OBJECTIVES
+            </span>
+            {!editing ? (
+              <button onClick={() => { setEditFields({ outcome: goal.outcome, verification: goal.verification, constraints: goal.constraints, boundaries: goal.boundaries, iterationPolicy: goal.iterationPolicy, stopCondition: goal.stopCondition }); setEditing(true); }} style={{
+                display: "flex", alignItems: "center", gap: 5, padding: "5px 11px", borderRadius: 8,
+                border: `1px solid ${T.border}`, background: "transparent", color: T.textMuted,
+                fontSize: 11, fontWeight: 600, fontFamily: F.mono, cursor: "pointer",
+              }}>{I.edit} Edit</button>
+            ) : (
+              <div style={{ display: "flex", gap: 6 }}>
+                <button onClick={() => setEditing(false)} style={{
+                  padding: "5px 12px", borderRadius: 8, border: "none", background: T.accent,
+                  color: "#fff", fontSize: 11, fontWeight: 700, fontFamily: F.mono, cursor: "pointer",
+                }}>Save</button>
+                <button onClick={() => setEditing(false)} style={{
+                  padding: "5px 11px", borderRadius: 8, border: `1px solid ${T.border}`, background: "transparent",
+                  color: T.textMuted, fontSize: 11, fontWeight: 500, fontFamily: F.mono, cursor: "pointer",
+                }}>Cancel</button>
+              </div>
+            )}
+          </div>
+          {[
+            { key: "outcome", label: "Outcome", value: goal.outcome, color: T.green, hint: "The clear end-state you want" },
+            { key: "verification", label: "Verification", value: goal.verification, color: T.blue, hint: "How success is proven" },
+            { key: "constraints", label: "Constraints", value: goal.constraints, color: T.amber, hint: "Guardrails the agent must respect" },
+            { key: "boundaries", label: "Boundaries", value: goal.boundaries, color: T.purple, hint: "What it can read and write" },
+            { key: "iterationPolicy", label: "Iteration Policy", value: goal.iterationPolicy, color: T.cyan, hint: "How it decides the next step" },
+            { key: "stopCondition", label: "Stop Condition", value: goal.stopCondition, color: T.red, hint: "When to stop and ask you" },
+          ].map((f, i) => (
+            <div key={i} style={{ marginBottom: i < 5 ? 12 : 0 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: f.color, fontFamily: F.mono, marginBottom: 4, letterSpacing: "0.06em" }}>
+                {f.label}
+              </div>
+              {editing ? (
+                <textarea
+                  value={editFields[f.key] ?? f.value}
+                  onChange={e => setEditFields({ ...editFields, [f.key]: e.target.value })}
+                  rows={2}
+                  style={{
+                    width: "100%", padding: "8px 10px", borderRadius: 8,
+                    border: `1px solid ${f.color}40`, background: T.surface, color: T.text,
+                    fontSize: 12, fontFamily: F.body, lineHeight: 1.5, outline: "none",
+                    resize: "vertical", boxSizing: "border-box",
+                  }}
+                />
+              ) : (
+                <div style={{
+                  fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5,
+                  padding: "8px 10px", borderRadius: 8, background: T.surface, border: `1px solid ${T.border}`,
+                }}>{f.value}</div>
+              )}
+            </div>
+          ))}
+          {editing && (
+            <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 10, fontStyle: "italic" }}>
+              Editing objectives mid-run will re-plan remaining steps to match.
+            </div>
+          )}
+        </div>
+
+        {/* Blocker */}
+        {goal.blocker && (
+          <div style={{
+            padding: 16, borderRadius: 14,
+            background: `linear-gradient(135deg, ${T.amber}10, ${T.red}06)`,
+            border: `1px solid ${T.amber}35`, marginBottom: 14,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <div style={{ color: T.amber }}>{I.alert}</div>
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.amber, fontFamily: F.body }}>
+                {goal.blocker.title}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.6, marginBottom: 12 }}>
+              {goal.blocker.description}
+            </div>
+            <SectionLabel color={T.textDim}>Evidence</SectionLabel>
+            {goal.blocker.evidence.map((e, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                <span style={{ color: T.amber, fontSize: 8, marginTop: 5 }}>●</span>
+                <span style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{e}</span>
+              </div>
+            ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+              {goal.blocker.actions.map((a, i) => (
+                <button key={i} style={{
+                  width: "100%", padding: "10px 14px", borderRadius: 10,
+                  border: i === 0 ? "none" : `1px solid ${T.border}`,
+                  background: i === 0 ? T.green : "transparent",
+                  color: i === 0 ? "#fff" : T.textMuted,
+                  fontSize: 13, fontWeight: i === 0 ? 700 : 500, fontFamily: F.body, cursor: "pointer",
+                }}>{a}</button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Steps */}
+        <div style={{ padding: 16, borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, marginBottom: 14 }}>
+          <SectionLabel>Execution Steps</SectionLabel>
+          {goal.steps.map((step, i) => {
+            const sc2 = step.status === "done" ? T.green : step.status === "running" ? T.blue : step.status === "blocked" ? T.amber : T.textDim;
+            const agent = AGENTS[step.agent];
+            return (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: 10, padding: "10px 0",
+                borderBottom: i < goal.steps.length - 1 ? `1px solid ${T.border}` : "none",
+              }}>
+                <div style={{
+                  width: 24, height: 24, borderRadius: 12, flexShrink: 0,
+                  background: sc2 + "20", border: `2px solid ${sc2}`,
+                  display: "flex", alignItems: "center", justifyContent: "center", color: sc2,
+                }}>
+                  {step.status === "done" ? I.check :
+                   step.status === "running" ? <div style={{ width: 6, height: 6, borderRadius: 3, background: sc2, animation: "pulse 1.5s infinite" }} /> :
+                   step.status === "blocked" ? I.alert :
+                   <span style={{ fontSize: 9, fontFamily: F.mono }}>{i+1}</span>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, color: step.status === "pending" ? T.textDim : T.text, fontFamily: F.body }}>
+                    {step.label}
+                  </div>
+                  {agent && (
+                    <span style={{ fontSize: 10, color: agent.color, fontFamily: F.mono }}>{agent.short}</span>
+                  )}
+                </div>
+                {step.time && <span style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono, flexShrink: 0 }}>{step.time}</span>}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Secrets + Integrations */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+          <div style={{ padding: 12, borderRadius: 12, background: T.card, border: `1px solid ${T.border}` }}>
+            <SectionLabel>Secrets Used</SectionLabel>
+            {goal.secrets.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                <span style={{ color: T.green }}>{I.key}</span>
+                <span style={{ fontSize: 10, color: T.text, fontFamily: F.mono }}>{s}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ padding: 12, borderRadius: 12, background: T.card, border: `1px solid ${T.border}` }}>
+            <SectionLabel>Integrations</SectionLabel>
+            {goal.integrations.map((s, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                <span style={{ color: T.blue }}>{I.plug}</span>
+                <span style={{ fontSize: 10, color: T.text, fontFamily: F.mono }}>{s}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Live Logs */}
+        {goal.logs.length > 0 && (
+          <div style={{ padding: 14, borderRadius: 14, background: T.bg, border: `1px solid ${T.border}`, marginBottom: 14 }}>
+            <SectionLabel>Live Log</SectionLabel>
+            {goal.logs.map((log, i) => {
+              const lc = log.level === "success" ? T.green : log.level === "warn" ? T.amber : log.level === "error" ? T.red : T.textDim;
+              return (
+                <div key={i} style={{
+                  display: "flex", gap: 8, padding: "5px 0", fontFamily: F.mono, fontSize: 11,
+                  borderBottom: i < goal.logs.length - 1 ? `1px solid ${T.border}` : "none",
+                }}>
+                  <span style={{ color: T.textDim, flexShrink: 0 }}>{log.time}</span>
+                  <span style={{ color: lc, lineHeight: 1.5 }}>
+                    {log.msg.split(/(\{\{.*?\}\})/).map((part, j) =>
+                      part.startsWith("{{") ? (
+                        <span key={j} style={{ color: T.green, fontWeight: 700, background: T.green + "15", padding: "1px 5px", borderRadius: 4 }}>{part}</span>
+                      ) : part
+                    )}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Controls */}
+        {goal.status === "running" && (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button style={{
+              flex: 1, padding: "12px", borderRadius: 10, border: "none",
+              background: T.amber, color: T.bg, fontSize: 13, fontWeight: 700, fontFamily: F.mono,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>{I.pause} Pause</button>
+            <button style={{
+              flex: 1, padding: "12px", borderRadius: 10, border: `1px solid ${T.red}40`,
+              background: "transparent", color: T.red, fontSize: 13, fontWeight: 700, fontFamily: F.mono,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            }}>{I.trash} Abort</button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ─── GOALS LIST VIEW ───
+  return (
+    <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 80px" }}>
+      {/* Program Goal (overarching mission) */}
+      <div style={{
+        padding: 18, borderRadius: 16, marginBottom: 16,
+        background: `linear-gradient(135deg, ${T.accent}14, ${T.purple}0A)`,
+        border: `1px solid ${T.accent}30`,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+          <div style={{ color: T.accent }}>{I.target}</div>
+          <span style={{ fontSize: 10, fontWeight: 700, color: T.accent, fontFamily: F.mono, letterSpacing: "0.1em" }}>
+            PROGRAM GOAL
+          </span>
+        </div>
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.body, lineHeight: 1.45, marginBottom: 14 }}>
+          Launch and grow an AI-powered product securely — agents building features, calling APIs, and deploying code without raw credentials ever touching a chat or log.
+        </div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.08em", marginBottom: 8 }}>
+          OBJECTIVES
+        </div>
+        {[
+          { n: "01", color: T.green, text: "Ship features faster: agents build, test, and open PRs while you review and merge." },
+          { n: "02", color: T.blue, text: "Zero credential exposure: every key scoped, injected at runtime, and automatically revoked." },
+          { n: "03", color: T.purple, text: "Full audit trail: every agent action logged and attributable — know exactly what ran and when." },
+        ].map((o, i) => (
+          <div key={i} style={{ display: "flex", gap: 9, alignItems: "flex-start", marginBottom: i < 2 ? 8 : 0 }}>
+            <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 700, color: o.color, marginTop: 1, minWidth: 16 }}>{o.n}</span>
+            <span style={{ fontSize: 12.5, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{o.text}</span>
+          </div>
+        ))}
+        <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 12, fontStyle: "italic", borderTop: `1px solid ${T.border}`, paddingTop: 10 }}>
+          The goals below are the execution work that ladders up to this mission.
+        </div>
+      </div>
+
+      {/* New Goal CTA */}
+      <button style={{
+        width: "100%", padding: "16px", borderRadius: 14,
+        background: `linear-gradient(135deg, ${T.accent}12, ${T.purple}08)`,
+        border: `1px dashed ${T.accent}35`, color: T.accent,
+        fontSize: 14, fontWeight: 700, fontFamily: F.mono, cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 16,
+      }}>{I.target} /goal — Define new objective</button>
+
+      {/* Plan → Execute → Verify loop */}
+      <div style={{ padding: 14, borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, marginBottom: 16 }}>
+        <SectionLabel>Goal Execution Loop</SectionLabel>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0, margin: "8px 0" }}>
+          {[
+            { label: "Plan", color: T.purple, em: "🧠" },
+            { label: "Execute", color: T.blue, em: "⚡" },
+            { label: "Verify", color: T.green, em: "✓" },
+          ].map((s, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center" }}>
+              <div style={{
+                padding: "9px 16px", borderRadius: 10,
+                background: s.color + "12", border: `1px solid ${s.color}25`, textAlign: "center",
+              }}>
+                <div style={{ fontSize: 16, marginBottom: 1 }}>{s.em}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: s.color, fontFamily: F.mono }}>{s.label}</div>
+              </div>
+              {i < 2 && <span style={{ color: T.textDim, margin: "0 5px", fontSize: 14 }}>→</span>}
+            </div>
+          ))}
+        </div>
+        <div style={{ textAlign: "center", fontSize: 10, color: T.textDim, fontFamily: F.mono, marginTop: 4 }}>
+          ↻ Self-corrects on verification failure
+        </div>
+      </div>
+
+      {/* Agent Catalog (collapsed row) */}
+      <div style={{ padding: 14, borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, marginBottom: 16 }}>
+        <SectionLabel>Available Agents</SectionLabel>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {Object.entries(AGENTS).map(([k, a]) => (
+            <AgentChip key={k} agentKey={k} />
+          ))}
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, overflowX: "auto", paddingBottom: 2 }}>
+        {["all", "running", "blocked", "done"].map(f => (
+          <Pill key={f} active={filter === f} onClick={() => setFilter(f)}>
+            {f.charAt(0).toUpperCase() + f.slice(1)}
+          </Pill>
+        ))}
+      </div>
+
+      {/* Goal Cards */}
+      {filtered.map(goal => {
+        const sc = SC[goal.status];
+        return (
+          <div key={goal.id} onClick={() => setSelectedGoal(goal.id)} style={{
+            padding: 14, borderRadius: 14, background: T.card,
+            border: `1px solid ${goal.status === "blocked" ? T.amber + "35" : T.border}`,
+            cursor: "pointer", marginBottom: 10, transition: "border-color 0.2s",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <Badge color={sc.color} glow={goal.status === "running" || goal.status === "blocked"}>
+                {sc.icon} {sc.label}
+              </Badge>
+              <span style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono }}>{goal.created}</span>
+            </div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: F.body, lineHeight: 1.4, marginBottom: 8 }}>
+              {goal.title}
+            </div>
+            <ProgressBar value={goal.progress} color={sc.color} />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                {goal.agents.map(a => <AgentChip key={a} agentKey={a} small />)}
+              </div>
+              <span style={{ color: T.textDim }}>{I.chevRight}</span>
+            </div>
+            {/* Secrets referenced (small row) */}
+            <div style={{ display: "flex", gap: 4, marginTop: 6, flexWrap: "wrap" }}>
+              {goal.secrets.map((s, i) => (
+                <span key={i} style={{
+                  padding: "2px 6px", borderRadius: 4, background: T.green + "12",
+                  fontSize: 9, fontFamily: F.mono, color: T.green,
+                }}>{I.key} {s}</span>
+              ))}
+            </div>
+            {goal.blocker && (
+              <div style={{
+                marginTop: 8, padding: "7px 10px", borderRadius: 8,
+                background: T.amber + "10", border: `1px solid ${T.amber}18`,
+                fontSize: 11, color: T.amber, fontFamily: F.body,
+              }}>⚠ {goal.blocker.title} — tap to review</div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TAB 3: CODE SANDBOX (unchanged concept,
+   now with {{secret}} reference support)
+   ═══════════════════════════════════════════ */
+function CodeTab() {
+  const [running, setRunning] = useState(false);
+  const code = `# Vault injects credentials at runtime\nstripe_key = os.environ["STRIPE_SECRET_KEY"]  # {{STRIPE_SECRET_KEY}}\ngithub_pat  = os.environ["GITHUB_PAT"]         # {{GITHUB_PAT}}\n\n# Keys are scoped to this goal only\n# STRIPE_SECRET_KEY: billing read/write\n# GITHUB_PAT: feat/stripe-billing branch only\n\nstripe.api_key = stripe_key\nsession = stripe.checkout.Session.create(\n    payment_method_types=["card"],\n    line_items=[{"price": "price_pro_monthly", "quantity": 1}],\n    mode="subscription",\n    success_url="https://app.example.com/welcome",\n    cancel_url="https://app.example.com/pricing",\n)\n\nsubprocess.run(["git", "add", "src/billing/stripe.py"])\nsubprocess.run(["git", "commit", "-m", "feat: add Stripe checkout session"])\nsubprocess.run(["git", "push", "origin", "feat/stripe-billing"])\n\nprint("Session: cs_live_a1b2****")\nprint("PR opened. Credentials destroyed.")`;
+
+  return (
+    <div style={{ padding: "12px 16px", overflowY: "auto", height: "100%" }}>
+      <div style={{
+        padding: "8px 12px", borderRadius: 10, background: T.surface,
+        border: `1px solid ${T.border}`, marginBottom: 12,
+        display: "flex", alignItems: "center", gap: 8,
+      }}>
+        <div style={{ width: 8, height: 8, borderRadius: 4, background: T.privacyGreen, boxShadow: `0 0 6px ${T.privacyGreen}50` }} />
+        <span style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono }}>
+          Ephemeral container · Auto-destroys · Secrets injected via Vault
+        </span>
+      </div>
+
+      <div style={{ borderRadius: 14, background: T.bg, border: `1px solid ${T.border}`, overflow: "hidden", marginBottom: 14 }}>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 14px", borderBottom: `1px solid ${T.border}`,
+        }}>
+          <span style={{ fontSize: 12, color: T.textMuted, fontFamily: F.mono }}>stripe-billing.py</span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <Badge color={T.green} small>{I.lock} Sandboxed</Badge>
+          </div>
+        </div>
+        <pre style={{
+          padding: 14, margin: 0, fontSize: 12, fontFamily: F.mono,
+          color: T.textMuted, lineHeight: 1.7, overflowX: "auto", whiteSpace: "pre-wrap",
+        }}>
+          {code.split(/(\{\{.*?\}\})/).map((part, j) =>
+            part.startsWith("{{") ? (
+              <span key={j} style={{ color: T.green, fontWeight: 700, background: T.green + "15", padding: "1px 5px", borderRadius: 4 }}>{part}</span>
+            ) : part.includes("# ") ? (
+              <span key={j}>{part.split(/(#.*)/).map((p2, k) =>
+                p2.startsWith("#") ? <span key={k} style={{ color: T.textDim }}>{p2}</span> : <span key={k} style={{ color: T.cyan }}>{p2}</span>
+              )}</span>
+            ) : <span key={j} style={{ color: T.cyan }}>{part}</span>
+          )}
+        </pre>
+      </div>
+
+      <button onClick={() => { setRunning(true); setTimeout(() => setRunning(false), 2000); }} style={{
+        width: "100%", padding: "12px", borderRadius: 10, border: "none",
+        background: running ? T.amber : T.accent,
+        color: "#fff", fontSize: 13, fontWeight: 700, fontFamily: F.mono, cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+      }}>
+        {running ? <>{I.refresh} Running...</> : <>{I.play} Execute in Sandbox</>}
+      </button>
+
+      {running && (
+        <div style={{
+          marginTop: 12, padding: 14, borderRadius: 12, background: T.card,
+          border: `1px solid ${T.border}`, fontFamily: F.mono, fontSize: 11, color: T.green, lineHeight: 1.8,
+        }}>
+          <div style={{ color: T.textDim }}>$ python stripe-billing.py</div>
+          <div>STRIPE_SECRET_KEY injected from Vault...</div>
+          <div>GITHUB_PAT injected from Vault...</div>
+          <div>Checkout session created: cs_live_a1b2****</div>
+          <div>Committed: feat: add Stripe checkout session</div>
+          <div>PR opened: feat/stripe-billing → main</div>
+          <div style={{ color: T.textDim, marginTop: 4 }}>
+            ▸ Secrets injected from Vault at runtime
+            {"\n"}▸ Container will self-destruct in 30s
+          </div>
+        </div>
+      )}
+
+      {/* How Vault + Sandbox work together */}
+      <div style={{
+        marginTop: 14, padding: 14, borderRadius: 12, background: T.card, border: `1px solid ${T.border}`,
+      }}>
+        <SectionLabel color={T.green}>Vault → Sandbox Pipeline</SectionLabel>
+        {[
+          { step: "1", text: "Agent requests {{STRIPE_SECRET_KEY}} in execution plan" },
+          { step: "2", text: "Goal Engine resolves reference from encrypted Vault" },
+          { step: "3", text: "Value injected as env var inside ephemeral container" },
+          { step: "4", text: "Container executes, returns result, self-destructs" },
+          { step: "5", text: "Secret value never appears in logs, chat, or traces" },
+        ].map((item, i) => (
+          <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+            <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 700, color: T.green, opacity: 0.5, minWidth: 14 }}>{item.step}</span>
+            <span style={{ fontSize: 11, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{item.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TAB 4: PRIVACY (Architecture + Vault)
+   ═══════════════════════════════════════════ */
+function PrivacyTab() {
+  const [subTab, setSubTab] = useState("vault");
+  const [revealedId, setRevealedId] = useState(null);
+  const [showAddSecret, setShowAddSecret] = useState(false);
+  const [secretFilter, setSecretFilter] = useState("all");
+
+  const filtered = secretFilter === "all" ? SECRETS : SECRETS.filter(s => s.status === secretFilter);
+
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
+      <SubToggle
+        options={[
+          { key: "vault", label: "Secrets Vault", icon: I.lock },
+          { key: "arch", label: "Architecture", icon: I.shield },
+        ]}
+        active={subTab}
+        onChange={setSubTab}
+      />
+
+      <div style={{ flex: 1, overflowY: "auto", paddingBottom: 80 }}>
+        {subTab === "vault" ? (
+          /* ─── VAULT VIEW ─── */
+          <div style={{ padding: "0 16px" }}>
+            {/* Stats */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "Stored", value: SECRETS.length, color: T.green },
+                { label: "Auto-Rotate", value: SECRETS.filter(s => s.autoRotate).length, color: T.blue },
+                { label: "Expiring", value: SECRETS.filter(s => s.status === "expiring").length, color: T.amber },
+              ].map((s, i) => (
+                <div key={i} style={{
+                  padding: "12px 10px", borderRadius: 12, background: T.card,
+                  border: `1px solid ${T.border}`, textAlign: "center",
+                }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: T.text, fontFamily: F.mono }}>{s.value}</div>
+                  <div style={{ fontSize: 9, color: s.color, fontFamily: F.mono, fontWeight: 700, letterSpacing: "0.1em", marginTop: 2 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* How it works */}
+            <div style={{
+              padding: 14, borderRadius: 12, marginBottom: 14,
+              background: `linear-gradient(135deg, ${T.green}08, transparent)`,
+              border: `1px solid ${T.green}18`,
+            }}>
+              <SectionLabel color={T.green}>How Shield Vault Works</SectionLabel>
+              {[
+                "AES-256-GCM encryption at rest. Never stored in plaintext.",
+                "Agents reference by name: {{STRIPE_SECRET_KEY}} — never by value.",
+                "Values injected at runtime in ephemeral sandbox, then destroyed.",
+                "Real-time scanner intercepts secrets typed in chat before send.",
+              ].map((txt, i) => (
+                <div key={i} style={{ display: "flex", gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 700, color: T.green, opacity: 0.5, minWidth: 14 }}>0{i+1}</span>
+                  <span style={{ fontSize: 11, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{txt}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Filters + Add */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 12, alignItems: "center" }}>
+              {["all", "active", "expiring"].map(f => (
+                <Pill key={f} active={secretFilter === f} onClick={() => setSecretFilter(f)}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </Pill>
+              ))}
+              <button onClick={() => setShowAddSecret(!showAddSecret)} style={{
+                marginLeft: "auto", display: "flex", alignItems: "center", gap: 4,
+                padding: "7px 12px", borderRadius: 8, border: "none",
+                background: T.green, color: T.bg, fontSize: 11, fontWeight: 700,
+                fontFamily: F.mono, cursor: "pointer",
+              }}>{I.plus} Add</button>
+            </div>
+
+            {/* Add Secret Form */}
+            {showAddSecret && (
+              <div style={{
+                padding: 14, borderRadius: 12, background: T.card,
+                border: `1px solid ${T.green}35`, marginBottom: 12,
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: T.text, fontFamily: F.body, marginBottom: 10 }}>
+                  Add New Secret
+                </div>
+                {[
+                  { label: "Name", ph: "GITHUB_PAT" },
+                  { label: "Value", ph: "ghp_xxxxxxxxxxxx", pw: true },
+                  { label: "Service", ph: "GitHub" },
+                ].map((f, i) => (
+                  <div key={i} style={{ marginBottom: 8 }}>
+                    <label style={{ display: "block", fontSize: 10, color: T.textDim, fontFamily: F.mono, marginBottom: 3, letterSpacing: "0.05em" }}>
+                      {f.label}
+                    </label>
+                    <input type={f.pw ? "password" : "text"} placeholder={f.ph} style={{
+                      width: "100%", padding: "9px 11px", borderRadius: 8,
+                      border: `1px solid ${T.border}`, background: T.surface,
+                      color: T.text, fontSize: 13, fontFamily: F.mono, outline: "none", boxSizing: "border-box",
+                    }} />
+                  </div>
+                ))}
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={() => setShowAddSecret(false)} style={{
+                    flex: 1, padding: "10px", borderRadius: 8, border: "none",
+                    background: T.green, color: T.bg, fontSize: 12, fontWeight: 700, fontFamily: F.mono, cursor: "pointer",
+                  }}>Encrypt & Store</button>
+                  <button onClick={() => setShowAddSecret(false)} style={{
+                    padding: "10px 14px", borderRadius: 8, border: `1px solid ${T.border}`,
+                    background: "transparent", color: T.textMuted, fontSize: 12, fontFamily: F.body, cursor: "pointer",
+                  }}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {/* Secret Cards */}
+            {filtered.map(secret => (
+              <div key={secret.id} style={{
+                padding: "12px 14px", borderRadius: 12, marginBottom: 8,
+                background: T.card,
+                border: `1px solid ${secret.status === "expiring" ? T.amber + "35" : T.border}`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: T.text, fontFamily: F.mono }}>{secret.name}</span>
+                      {secret.status === "expiring" && <Badge color={T.amber} small glow>{I.alert} {secret.expiresIn}</Badge>}
+                    </div>
+                    <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>
+                      {secret.service} · used {secret.lastUsed}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={(e) => { e.stopPropagation(); setRevealedId(revealedId === secret.id ? null : secret.id); }} style={{
+                      width: 28, height: 28, borderRadius: 7, border: `1px solid ${T.border}`,
+                      background: "transparent", color: T.textMuted, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>{revealedId === secret.id ? I.eyeOff : I.eye}</button>
+                    <button style={{
+                      width: 28, height: 28, borderRadius: 7, border: `1px solid ${T.border}`,
+                      background: "transparent", color: T.textMuted, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>{I.copy}</button>
+                  </div>
+                </div>
+                <div style={{
+                  padding: "6px 10px", borderRadius: 7, background: T.surface,
+                  fontFamily: F.mono, fontSize: 11,
+                  color: revealedId === secret.id ? T.green : T.textDim,
+                  letterSpacing: "0.03em",
+                }}>
+                  {revealedId === secret.id ? "dop_v1_a1b2c3d4e5f6g7h8i9j0k1l2m3" : secret.masked}
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  {secret.autoRotate && <Badge color={T.blue} small>{I.refresh} Rotate</Badge>}
+                  <Badge color={T.green} small>{I.lock} AES-256</Badge>
+                  {secret.expiresIn && secret.status !== "expiring" && (
+                    <span style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginLeft: "auto" }}>Exp. {secret.expiresIn}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Reference guide */}
+            <div style={{
+              marginTop: 6, padding: 12, borderRadius: 12, background: T.card, border: `1px solid ${T.border}`,
+            }}>
+              <SectionLabel>Using secrets in agents & goals</SectionLabel>
+              <div style={{
+                padding: "10px 12px", borderRadius: 8, background: T.bg, border: `1px solid ${T.border}`,
+                fontFamily: F.mono, fontSize: 11, color: T.textDim, lineHeight: 1.8,
+              }}>
+                <span style={{ color: T.textDim }}>// In your goal definition:</span>{"\n"}
+                <span style={{ color: T.purple }}>Wire billing using </span>
+                <span style={{ color: T.green, fontWeight: 700 }}>{"{{STRIPE_SECRET_KEY}}"}</span>{"\n"}
+                <span style={{ color: T.purple }}>Open PR via </span>
+                <span style={{ color: T.green, fontWeight: 700 }}>{"{{GITHUB_PAT}}"}</span>{"\n\n"}
+                <span style={{ color: T.textDim }}>// Shield injects at runtime.</span>{"\n"}
+                <span style={{ color: T.textDim }}>// Never in logs, chat, or traces.</span>
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ─── ARCHITECTURE VIEW ─── */
+          <div style={{ padding: "0 16px" }}>
+            {/* Privacy Metrics */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+              {[
+                { label: "Data Retained", value: "0 bytes", color: T.privacyGreen },
+                { label: "PII Blocked", value: "1,247", color: T.blue },
+                { label: "Sessions Destroyed", value: "8,392", color: T.purple },
+                { label: "Vault Injections", value: "342", color: T.cyan },
+              ].map((m, i) => (
+                <div key={i} style={{ padding: 12, borderRadius: 12, background: T.card, border: `1px solid ${T.border}` }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: m.color, fontFamily: F.mono }}>{m.value}</div>
+                  <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>{m.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Query Lifecycle */}
+            <div style={{ padding: 14, borderRadius: 14, background: T.card, border: `1px solid ${T.border}`, marginBottom: 14 }}>
+              <SectionLabel>Query Lifecycle</SectionLabel>
+              {[
+                { label: "Your Device", sub: "Message composed locally", color: T.text },
+                { label: "Secret Scanner", sub: "Intercepts credentials before send", color: T.amber },
+                { label: "Vault Injection", sub: "Resolves {{secret}} references for sandbox", color: T.green },
+                { label: "Model Request", sub: "Sent with zero-retention contract", color: T.blue },
+                { label: "Model Response", sub: "Generated with zero-retention contract", color: T.cyan },
+                { label: "Session Destroyed", sub: "All traces deleted after delivery", color: T.privacyGreen },
+              ].map((step, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, marginBottom: i < 5 ? 10 : 0, alignItems: "flex-start" }}>
+                  <div style={{
+                    width: 20, height: 20, borderRadius: 10, flexShrink: 0,
+                    background: step.color + "20", border: `2px solid ${step.color}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700, color: step.color, fontFamily: F.mono,
+                  }}>{i + 1}</div>
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: step.color, fontFamily: F.body }}>{step.label}</div>
+                    <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>{step.sub}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Compliance */}
+            <div style={{ padding: 14, borderRadius: 14, background: T.card, border: `1px solid ${T.border}` }}>
+              <SectionLabel>Compliance Readiness</SectionLabel>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {["GDPR", "CCPA", "HIPAA", "SOC 2", "EU AI Act", "UK ICO"].map(c => (
+                  <Badge key={c} color={T.privacyGreen}>{I.check} {c}</Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   SETTINGS PANEL (gear icon overlay)
+   Contains: Pricing, Models, Integrations, Account
+   ═══════════════════════════════════════════ */
+function SettingsPanel({ onClose }) {
+  const [section, setSection] = useState(null);
+  const [expandedTier, setExpandedTier] = useState(null);
+
+  const tiers = [
+    { name: "Shield Free", price: "$0", period: "/mo", color: T.textMuted, features: ["3 models (GPT-4o mini, Claude Haiku, Llama)", "50 messages/day", "Basic code sandbox", "No data retention"], badge: "Free forever" },
+    { name: "Shield Plus", price: "$9.99", period: "/mo", color: T.blue, features: ["7 models including GPT-4o, Claude Sonnet", "Unlimited messages", "Full code sandbox", "Basic agent access", "3 Vault secrets"], badge: "Most popular" },
+    { name: "Shield Pro", price: "$19.99", period: "/mo", color: T.purple, features: ["All frontier models", "Priority routing", "All 6 agents + Goals Engine", "25 integrations", "25 Vault secrets + auto-rotate", "Goal lifecycle management"], highlight: true },
+    { name: "Shield Teams", price: "$29.99", period: "/user/mo", color: T.accent, features: ["Everything in Pro", "Team workspaces + RBAC", "Shared Vault with team permissions", "50+ integrations", "SSO/SAML", "Admin dashboard", "Audit logging"], badge: "NEW Revenue" },
+    { name: "Shield Enterprise", price: "Custom", period: "", color: T.amber, features: ["Everything in Teams", "On-prem / VPC deployment", "Unlimited Vault + HSM integration", "SOC 2 + HIPAA certified", "Custom model fine-tuning", "Dedicated support + SLA", "99.99% uptime guarantee"], badge: "$5K+/mo" },
+  ];
+
+  const sections = [
+    { key: "pricing", label: "Plans & Pricing", icon: I.dollar, color: T.accent, desc: "Shield Free → Enterprise" },
+    { key: "models", label: "Model Preferences", icon: I.bot, color: T.purple, desc: "Default model, routing rules" },
+    { key: "integrations", label: "Integrations", icon: I.plug, color: T.blue, desc: "Connected services & OAuth" },
+    { key: "account", label: "Account & Team", icon: I.shield, color: T.green, desc: "Profile, team members, RBAC" },
+    { key: "notifications", label: "Notifications", icon: I.alert, color: T.amber, desc: "Goal alerts, blocker reports" },
+  ];
+
+  // ─── Section detail views ───
+  if (section === "pricing") {
+    return (
+      <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 24px" }}>
+        <button onClick={() => setSection(null)} style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+          color: T.textMuted, fontSize: 13, fontFamily: F.body, cursor: "pointer", padding: 0, marginBottom: 14,
+        }}>{I.arrowLeft} Settings</button>
+
+        <div style={{ textAlign: "center", marginBottom: 16 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: T.text, fontFamily: F.display }}>Plans & Pricing</div>
+          <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginTop: 2 }}>Choose the plan that fits your team</div>
+        </div>
+
+        {tiers.map((tier, i) => (
+          <div key={i} onClick={() => setExpandedTier(expandedTier === i ? null : i)} style={{
+            padding: 14, borderRadius: 14, marginBottom: 10,
+            background: tier.highlight ? `linear-gradient(135deg, ${tier.color}10, ${T.card})` : T.card,
+            border: `1px solid ${tier.highlight ? tier.color + "35" : T.border}`,
+            cursor: "pointer",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: tier.color, fontFamily: F.display }}>
+                    {tier.name}
+                  </span>
+                  {tier.highlight && <Badge color={tier.color} small>Popular</Badge>}
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: T.text, fontFamily: F.display }}>{tier.price}</span>
+                  <span style={{ fontSize: 12, color: T.textDim, fontFamily: F.body }}>{tier.period}</span>
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <Badge color={tier.color} small>{tier.badge}</Badge>
+                <div style={{ color: T.textDim, marginTop: 6 }}>
+                  {expandedTier === i ? I.chevDown : I.chevRight}
+                </div>
+              </div>
+            </div>
+            {expandedTier === i && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
+                {tier.features.map((f, j) => (
+                  <div key={j} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+                    <span style={{ color: tier.color, marginTop: 2 }}>{I.check}</span>
+                    <span style={{ fontSize: 12, color: T.textMuted, fontFamily: F.body, lineHeight: 1.5 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+
+        <div style={{
+          padding: 14, borderRadius: 14, background: `linear-gradient(135deg, ${T.accent}10, ${T.purple}08)`,
+          border: `1px solid ${T.accent}20`, textAlign: "center", marginTop: 6,
+        }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: T.accent, fontFamily: F.mono, marginBottom: 4 }}>EARLY ACCESS</div>
+          <div style={{ fontSize: 14, fontWeight: 700, color: T.text, fontFamily: F.display }}>Design partner program open</div>
+          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body, marginTop: 4 }}>First 10 teams get Pro free for 6 months</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "models") {
+    return (
+      <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 24px" }}>
+        <button onClick={() => setSection(null)} style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+          color: T.textMuted, fontSize: 13, fontFamily: F.body, cursor: "pointer", padding: 0, marginBottom: 14,
+        }}>{I.arrowLeft} Settings</button>
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.display, marginBottom: 14 }}>Model Preferences</div>
+
+        <SectionLabel>Default Model</SectionLabel>
+        {[
+          { name: "Auto (Recommended)", sub: "Shield selects optimal model per query", active: true },
+          { name: "Claude Sonnet 4", sub: "Best for reasoning & analysis", active: false },
+          { name: "GPT-4o", sub: "Best for general tasks", active: false },
+          { name: "Gemini 2.5 Pro", sub: "Best for multimodal", active: false },
+        ].map((m, i) => (
+          <div key={i} style={{
+            padding: "12px 14px", borderRadius: 12, marginBottom: 8,
+            background: T.card, border: `1px solid ${m.active ? T.accent + "40" : T.border}`,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: m.active ? T.accent : T.text, fontFamily: F.body }}>{m.name}</div>
+              <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>{m.sub}</div>
+            </div>
+            {m.active && <div style={{ width: 18, height: 18, borderRadius: 9, background: T.accent, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff" }}>{I.check}</div>}
+          </div>
+        ))}
+
+        <div style={{ marginTop: 16 }}>
+          <SectionLabel>Routing Rules</SectionLabel>
+          <div style={{ padding: 12, borderRadius: 12, background: T.card, border: `1px solid ${T.border}` }}>
+            {[
+              { label: "Cost optimization", desc: "Prefer cheaper models for simple tasks", on: true },
+              { label: "Speed priority", desc: "Route to fastest available model", on: false },
+              { label: "Privacy maximum", desc: "Only use zero-retention models", on: true },
+            ].map((rule, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "10px 0", borderBottom: i < 2 ? `1px solid ${T.border}` : "none",
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: T.text, fontFamily: F.body }}>{rule.label}</div>
+                  <div style={{ fontSize: 10, color: T.textDim, fontFamily: F.body }}>{rule.desc}</div>
+                </div>
+                <div style={{
+                  width: 36, height: 20, borderRadius: 10, background: rule.on ? T.accent : T.border,
+                  position: "relative", cursor: "pointer",
+                }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: 8, background: "#fff",
+                    position: "absolute", top: 2, left: rule.on ? 18 : 2, transition: "left 0.2s",
+                  }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (section === "integrations") {
+    return (
+      <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 24px" }}>
+        <button onClick={() => setSection(null)} style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+          color: T.textMuted, fontSize: 13, fontFamily: F.body, cursor: "pointer", padding: 0, marginBottom: 14,
+        }}>{I.arrowLeft} Settings</button>
+        <div style={{ fontSize: 16, fontWeight: 700, color: T.text, fontFamily: F.display, marginBottom: 14 }}>Integrations</div>
+
+        <SectionLabel>Connected</SectionLabel>
+        {[
+          { name: "GitHub", status: "Connected", color: T.green },
+          { name: "Stripe", status: "Connected", color: T.green },
+          { name: "AWS", status: "Connected", color: T.green },
+          { name: "OpenAI", status: "Connected", color: T.green },
+          { name: "Supabase", status: "Connected", color: T.green },
+        ].map((int, i) => (
+          <div key={i} style={{
+            padding: "12px 14px", borderRadius: 12, marginBottom: 8,
+            background: T.card, border: `1px solid ${T.border}`,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.text, fontFamily: F.body }}>{int.name}</span>
+            <Badge color={int.color} small>{I.check} {int.status}</Badge>
+          </div>
+        ))}
+
+        <SectionLabel>Available</SectionLabel>
+        {["Buttondown", "Substack", "ConvertKit", "Beehiiv", "AWS SES", "Vercel"].map((name, i) => (
+          <div key={i} style={{
+            padding: "12px 14px", borderRadius: 12, marginBottom: 8,
+            background: T.card, border: `1px solid ${T.border}`,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <span style={{ fontSize: 13, color: T.textMuted, fontFamily: F.body }}>{name}</span>
+            <button style={{
+              padding: "5px 12px", borderRadius: 7, border: `1px solid ${T.accent}40`,
+              background: "transparent", color: T.accent, fontSize: 11, fontWeight: 600,
+              fontFamily: F.mono, cursor: "pointer",
+            }}>Connect</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ─── Settings menu ───
+  return (
+    <div style={{ overflowY: "auto", height: "100%", padding: "12px 16px 24px" }}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: T.text, fontFamily: F.display, marginBottom: 4 }}>Settings</div>
+      <div style={{ fontSize: 12, color: T.textDim, fontFamily: F.body, marginBottom: 16 }}>Platform configuration & account</div>
+
+      {sections.map((s, i) => (
+        <button key={s.key} onClick={() => setSection(s.key)} style={{
+          width: "100%", padding: "14px 16px", borderRadius: 14, marginBottom: 8,
+          background: T.card, border: `1px solid ${T.border}`,
+          display: "flex", alignItems: "center", gap: 12,
+          cursor: "pointer", textAlign: "left",
+        }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: s.color + "15", border: `1px solid ${s.color}25`,
+            display: "flex", alignItems: "center", justifyContent: "center", color: s.color,
+            flexShrink: 0,
+          }}>{s.icon}</div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: T.text, fontFamily: F.body }}>{s.label}</div>
+            <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.body }}>{s.desc}</div>
+          </div>
+          <span style={{ color: T.textDim }}>{I.chevRight}</span>
+        </button>
+      ))}
+
+      {/* Current plan badge */}
+      <div style={{
+        marginTop: 8, padding: 14, borderRadius: 14,
+        background: `linear-gradient(135deg, ${T.purple}10, ${T.card})`,
+        border: `1px solid ${T.purple}25`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+      }}>
+        <div>
+          <div style={{ fontSize: 11, color: T.textDim, fontFamily: F.mono, letterSpacing: "0.06em", marginBottom: 2 }}>CURRENT PLAN</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: T.purple, fontFamily: F.display }}>Shield Pro</div>
+        </div>
+        <Badge color={T.purple}>$19.99/mo</Badge>
+      </div>
+
+      {/* App info */}
+      <div style={{ textAlign: "center", marginTop: 20, fontSize: 10, color: T.textDim, fontFamily: F.mono }}>
+        Shield AI · Credential Layer for AI Agents
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   MAIN APP SHELL
+   ═══════════════════════════════════════════ */
+function ShieldAI() {
+  const [tab, setTab] = useState("chat");
+  const [goalDeepLink, setGoalDeepLink] = useState(null);
+  const [isWide, setIsWide] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsWide(window.innerWidth > 700);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const handleGoalTap = (goalId) => {
+    setGoalDeepLink(goalId);
+    setTab("goals");
+  };
+
+  const [showSettings, setShowSettings] = useState(false);
+
+  const tabs = [
+    { key: "chat", label: "Chat", icon: I.chat },
+    { key: "goals", label: "Goals", icon: I.target },
+    { key: "code", label: "Code", icon: I.code },
+    { key: "privacy", label: "Privacy", icon: I.shield },
+  ];
+
+  const renderContent = () => {
+    if (showSettings) return <SettingsPanel onClose={() => setShowSettings(false)} />;
+    switch (tab) {
+      case "chat": return <ChatTab onGoalTap={handleGoalTap} />;
+      case "goals": return <GoalsTab initialGoalId={goalDeepLink} />;
+      case "code": return <CodeTab />;
+      case "privacy": return <PrivacyTab />;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{
+      width: "100%", maxWidth: isWide ? 900 : 430, margin: "0 auto",
+      background: T.bg, height: "100vh",
+      display: "flex", flexDirection: "column",
+      fontFamily: F.body, color: T.text,
+      position: "relative",
+      borderLeft: isWide ? `1px solid ${T.border}` : "none",
+      borderRight: isWide ? `1px solid ${T.border}` : "none",
+    }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: ${T.border}; border-radius: 3px; }
+        input::placeholder { color: ${T.textDim}; }
+      `}</style>
+
+      {/* Header */}
+      <div style={{
+        padding: "14px 16px", borderBottom: `1px solid ${T.border}`,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        flexShrink: 0,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 30, height: 30, borderRadius: 9,
+            background: `linear-gradient(135deg, ${T.accent}, ${T.accentSoft})`,
+            display: "flex", alignItems: "center", justifyContent: "center", color: "#fff",
+          }}>{I.shield}</div>
+          <div>
+            <span style={{
+              fontSize: 16, fontWeight: 800, fontFamily: F.display,
+              background: `linear-gradient(135deg, ${T.accent}, ${T.accentSoft})`,
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+            }}>SHIELD AI</span>
+            <span style={{ fontSize: 10, color: T.textDim, fontFamily: F.mono, display: "block", marginTop: -2, letterSpacing: "0.06em" }}>
+              Privacy-First · {isWide ? "Desktop" : "Mobile"}
+            </span>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ width: 6, height: 6, borderRadius: 3, background: T.privacyGreen, boxShadow: `0 0 6px ${T.privacyGreen}60` }} />
+            <span style={{ fontSize: 10, color: T.privacyGreen, fontFamily: F.mono, fontWeight: 600 }}>SECURE</span>
+          </div>
+          <button onClick={() => setShowSettings(!showSettings)} style={{
+            width: 34, height: 34, borderRadius: 9, border: `1px solid ${showSettings ? T.accent + "50" : T.border}`,
+            background: showSettings ? T.accent + "12" : "transparent",
+            color: showSettings ? T.accent : T.textMuted,
+            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.2s",
+          }}>{I.settings}</button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        {renderContent()}
+      </div>
+
+      {/* Bottom Tab Bar */}
+      {!showSettings && (
+      <div style={{
+        display: "flex", borderTop: `1px solid ${T.border}`,
+        background: T.surface, padding: "6px 4px 10px", flexShrink: 0,
+      }}>
+        {tabs.map(t => {
+          const active = tab === t.key;
+          return (
+            <button key={t.key} onClick={() => { setTab(t.key); if (t.key !== "goals") setGoalDeepLink(null); }} style={{
+              flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+              background: "none", border: "none", cursor: "pointer",
+              color: active ? T.accent : T.textDim,
+              transition: "color 0.2s",
+              padding: "4px 0",
+            }}>
+              <div style={{
+                transition: "transform 0.2s",
+                transform: active ? "scale(1.15)" : "scale(1)",
+              }}>{t.icon}</div>
+              <span style={{
+                fontSize: 10, fontWeight: active ? 700 : 500, fontFamily: F.body,
+                letterSpacing: "0.02em",
+              }}>{t.label}</span>
+              {active && (
+                <div style={{
+                  width: 4, height: 4, borderRadius: 2,
+                  background: T.accent, boxShadow: `0 0 6px ${T.accent}60`,
+                  marginTop: -1,
+                }} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(ShieldAI));
+  </script>
+</body>
+</html>
